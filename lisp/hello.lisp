@@ -153,3 +153,17 @@ a
 ;;'a = (quote a)
 
 
+
+;; binding
+;; inside of let, ((a 1) (b 2)), a and b are not accessible through each other
+(let ((a 1) (b 2)) (setq c (+ a b)))
+
+
+(let ((a 1)
+  (b 2)
+  (c 3))
+  (setq cc (+ a b c))
+  cc)
+
+(let ((a 3)) a)
+
