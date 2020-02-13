@@ -164,6 +164,222 @@ a
   (c 3))
   (setq cc (+ a b c))
   cc)
+cc
 
 (let ((a 3)) a)
+
+(setq x 1)
+(let ((x 1)
+      (y (+ x 1)))
+  y)
+
+;;;;;;;;;;;;;;;;;
+;; dynamic scope
+;;;;;;;;;;;;;;;;;
+
+;; lexical scope
+;; dynamically scope
+
+;; lexical scope
+(setq regular 5)
+(defun check-regular ()
+  regular)
+(check-regular)
+(let ((reguar 6)) (check-regular))
+
+;; dynamically scope
+;; by convention, the name of the special variable begins and end with a *
+(defvar *sp* 6)
+(defun check-special ()
+  *sp*)
+(check-special)
+(let ((*sp* 112)) (check-special))
+;; 
+(defvar sp1 6)
+(defun check-special1 ()
+  sp1)
+(check-special1)
+(let ((sp1 112)) (check-special1))
+sp1
+
+;; array
+(make-array 3)
+
+(char "abc" 0)
+(aref "abc" 0)
+
+(setq aa (concatenate 'list "abc" "ccc"))
+aa
+
+(setf bb (concatenate 'list "abc" "ccc"))
+bb
+
+
+;; struct is data type
+(defstruct foo
+  bar
+  baaz
+  qqqq)
+
+;; the way is to assign something first
+(setf bb (make-foo :bar 1200120 :baaz "hello"))
+bb
+;; foo-bar is to access the instance of a struct foo at field foo-bar
+(foo-bar bb)
+(setf (foo-qqqq bb) "bbb")
+bb
+
+;; aref = array element refer
+(setf a (make-array 3))
+(aref a 1)
+(aref a 2)
+
+
+(setf (aref a 1) 3)
+a
+(aref a 1)
+
+(defstruct foo1
+  bar
+  qqq)
+
+(setf a (make-foo1))
+a
+(foo1-bar a)
+
+(setf (foo1-bar a) 111)
+(foo1-bar a)
+a
+
+
+;; todo
+(setf a (make-array 1))
+a
+(push 5 (aref a 0))
+(aref a 0)
+a
+
+;; booleans and conditionals
+(if t 5 6)
+(if nil 5 6)
+
+(setf a 10)
+(if (> a 4)
+    (progn
+      (print "i'm true")
+      (print "i'm going to do something dumb")
+      (setq ccc "1000")
+      (concatenate 'string ccc " what the heck???"))
+    (print "i'm false"))
+
+
+(when t 3)
+(when t
+  (progn
+    (setf w "today is a good day")
+    (concatenate 'string w " yay!!!")))
+
+(unless nil 4)
+(unless t 4)
+
+;; when/unless allow any number of statements
+(when t
+  (setf cc "sdkfksjf ")
+  (setf b (concatenate 'string cc "yyy"))
+  (print b))
+
+;; if elseif else
+(setf c 3)
+(cond
+  ((evenp c) (print "i'm even"))
+  ((> c 100) (print "i'm not even and i'm >2"))
+  (t "this is else"))
+   
+   
+(defun hotp (x y)
+  (cond
+    ((= x 1) y)
+    ((oddp x) (hotp (+ 1 x) (+ 1 y)))
+    (t "end")))
+(hotp 3 2)
+
+
+(defun hotpo (x steps)        
+    (cond
+     ((= x 1) steps)
+     ((oddp x) (hotpo (+ 1 (* x 3)) (+ 1 steps)))
+     (t (hotpo (/ x 2) (+ 1 steps)))))
+(hotpo 7 0)
+
+
+;; case statement
+(setf x 'd)
+(case x
+  (a 4)
+  ((b c) '1)
+  (d "hello")
+  (otherwise 11111))
+
+
+
+(setf a 5)
+(loop
+   (setq a (+ a 1))
+   (when (> a 7)
+     (progn
+       (print a)
+       (return "hahaha"))))
+
+
+;; bind a list to variable and return nil when hits end. so it always return nil
+(dolist (x '(a b c)) (print x))
+
+;; do (initial value)
+;; (termination condition with a return)
+;; (body)
+
+(do ((x 1 (+ x 2))
+     (y 1 (* y 2)))
+    ((> x 20) y)
+  (print x)
+  (print y))
+
+
+
+
+;; funcall first argument on its remaining
+(funcall #'+ 3 4)
+;; apply is same but last argument should be a list
+(apply #'+ 3 4 12 '(1 2))
+
+
+;; lambda
+(lambda (x) (+ x 12))
+(funcall * 3)
+
+
+
+(funcall (lambda (x) (* x 3)) 2)
+
+(mapcar (lambda (x) (+ x 2)) '(1 2 3 4))
+
+
+;; sort is not stable which means if two equal items may appear differently
+;; sort-stable on the other hand is a stable one
+(sort '(1 2 3 4) #'>)
+
+(print (> 2 4))
+
+
+(eq 'a 'a)
+
+(= 12 32)
+
+
+
+;; list functions
+
+(setf a (append '(1 2) '(32 2 "a")))
+a
+(reverse a)
 
