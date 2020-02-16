@@ -49,4 +49,29 @@
 (fib 4000000)
 
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The prime factors of 13195 are 5, 7, 13 and 29.
 
+;; What is the largest prime factor of the number 600851475143 ?
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun findPrime (x)
+  ;; this is a while loop
+  (loop while (= (mod x 2) 0)
+     do (setf x (/ x 2))
+       (print 2))
+
+  ;(format t "current x is ~s~%" x)
+  (loop for i from 3 to (sqrt x)
+     do
+       (loop while (= (mod x i) 0)
+  	  do (setf x (/ x i))
+  	    (print i))
+       )
+
+  (when (> x 2)
+    (print x))
+  )
+
+(findPrime 13195)
+(findPrime 600851475143)
