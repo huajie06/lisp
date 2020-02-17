@@ -31,12 +31,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-
-;; (defun sum4m (&key (c 4000000))
-;;   ()
-;;   )
-
 (defun fib (x)
+  ;; this is somewhat a for loop
   (let ((a 0)(b 1)(c 0)(s 0))
     (loop 
        (when (evenp a) (setf s (+ s a)))
@@ -62,7 +58,8 @@
        (print 2))
 
   ;(format t "current x is ~s~%" x)
-  (loop for i from 3 to (sqrt x)
+  ;; this is a for loop
+  (loop for i from 3 to (sqrt x) by 1
      do
        (loop while (= (mod x i) 0)
   	  do (setf x (/ x i))
@@ -75,3 +72,73 @@
 
 (findPrime 13195)
 (findPrime 600851475143)
+
+
+
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; A palindromic number reads the same both ways. The largest palindrome made from the product of two 2-digit numbers is 9009 = 91 × 99.
+
+;; Find the largest palindrome made from the product of two 3-digit numbers.
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun rn (x)
+  ;; reverse a number in order
+  (setf s 0)
+  (loop while (> x 0)
+     do
+       (setf rr (rem x 10)
+	     a (floor (/ x 10))
+	     x a
+	     s (+ rr (* 10 s)))
+	)
+  s
+)
+
+(defun parProd ()
+  (setf ret 0)
+  (loop for i from 101 to 1000 do
+       (loop for j from 101 to 1000 do
+	  (when (and (= (* i j) (rn (* i j))) (> (* i j) ret))
+	    (setf ret (* i j)))
+	  )
+       )
+  ret
+  ;; last value will be returned by default
+  )
+
+;; not (parProd ())
+(parProd)
+
+
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 2520 is the smallest number that can be divided by each of the
+;; numbers from 1 to 10 without any remainder.
+
+;; What is the smallest positive number that is evenly divisible by
+;; all of the numbers from 1 to 20?
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(list 11 12 13 14 15 16 17 18 19 20)
+
+;;(defun eval5 (&optional (x 2520))
+(defun eval5 (x)
+  (setq f (list 11 12 13 14 15 16 17 18 19 20))
+  ;;(setq f (list 3 5))
+  ;;(setq f (list 1 2 3 4 5 6 7 8 9 10))
+  (loop for i in f
+     do
+       (setf r (rem x i))
+       (when (/= r 0) (return r))
+       )
+  )
+
+(eval5 5040)
+
+(let ((a 2520))
+  (loop
+     (setq a (+ a 1))
+     (unless (eval5 a) (return a))
+       ))
