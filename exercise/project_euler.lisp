@@ -326,3 +326,22 @@
   s
   )
 
+
+(defun isPrime (x)
+  (if (<= x 1) (return-from isPrime nil))
+  (loop for i from 2 to (sqrt x) do
+       (if (= (rem x i) 0)(return-from isPrime nil)))
+  t
+  )
+
+(isPrime 892384)
+(isPrime 2038074743)
+(isPrime 22801763489)
+
+(let ((s 0)
+      (n 2000000))
+      ;;(n 10))
+  (loop for i from 1 to n do
+     (if (isPrime i) (setq s (+ s i))))
+  s
+  )
