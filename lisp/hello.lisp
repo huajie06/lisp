@@ -1,4 +1,30 @@
-;; (write-line "hello world")
+'foo
+
+(intern "aaa")
+
+
+22/3
+
+(+ 12 2)
+
+(quote (+ 1 2))
+
+'(+ 1 2)
+
+(and t nil)
+(or t nil)
+
+
+(concatenate 'string "hello" "world")
+(concatenate 'string ("hello" "world"))
+(string "a")
+
+()
+;; ---------------------------------------------
+;; ---------------------------------------------
+;; ---------------------------------------------
+
+(write-line "hello world")
 
 (defun hello ()
   (format t "hello, world!~%"))
@@ -13,6 +39,8 @@
 ;; (print (1 23 3)) this is not valid because the list is not valid
 
 (setq a 5)
+
+(a)
 
 
 (let ((a 6)) a)
@@ -34,7 +62,6 @@ a
 
 (setq a (list 4 1 5))
 (print a)
-
 
 (setq b (cons 1 2))
 (print b)
@@ -109,24 +136,24 @@ a
   (if b (+ a b) a))
 
 (test 2 1)
+(test 2)
 (defun test1 (a &optional (b 1))
   (+ a b))
-
-
 (test1 1)
-
 (test1 2 3)
 
-;; y is (1 2) so needs to transfer somehow into (+ 1 2)
+;; y is (3 2) so needs to transfer somehow into (+ 1 2)
 (defun test2 (a b &rest y)
   (+ a b (apply '+ y)))
-
 (test2 1 2 3 2)
+
+(apply '+ (list 1 2))
+(apply '+ '(1 2))
+(apply '+ (quote (1 2)))
 
 ;; key arguments
 (defun test (&key a b)
-  (+ a b))
-
+  (+ a b)))
 (test :a 1 :b 2)
 
 ;; key arguments with default
@@ -140,10 +167,14 @@ a
 (t2 :b 2)
 (t2 :a 12 :b 2)
 
+(defun t3 (&key (a1 1) (a2 2))
+  (+ a1 a2))
+(t3 :a1 20 :a2 23)
+
 ;; print
 (print 3)
 (format t "An atom: ~S~%and a list: ~S~%and an integer: ~D~%"
-          nil (list 5) 6)
+        nil (list 5) 6)
 (format t "abc hehehe~%~S" (list 123))
 
 (setq a 1)
@@ -152,16 +183,14 @@ a
 (quote a)
 ;;'a = (quote a)
 
-
+(eq 'a (quote a))
 
 ;; binding
 ;; inside of let, ((a 1) (b 2)), a and b are not accessible through each other
 (let ((a 1) (b 2)) (setq c (+ a b)))
 
 
-(let ((a 1)
-  (b 2)
-  (c 3))
+(let ((a 1) (b 2) (c 3))
   (setq cc (+ a b c))
   cc)
 cc
@@ -186,6 +215,7 @@ cc
   regular)
 (check-regular)
 (let ((reguar 6)) (check-regular))
+regular
 
 ;; dynamically scope
 ;; by convention, the name of the special variable begins and end with a *
@@ -194,7 +224,9 @@ cc
   *sp*)
 (check-special)
 (let ((*sp* 112)) (check-special))
-;; 
+*sp*
+;;
+
 (defvar sp1 6)
 (defun check-special1 ()
   sp1)
@@ -231,12 +263,13 @@ bb
 
 ;; aref = array element refer
 (setf a (make-array 3))
+(print a)
 (aref a 1)
 (aref a 2)
 
 
 (setf (aref a 1) 3)
-a
+(print a)
 (aref a 1)
 
 (defstruct foo1
@@ -252,12 +285,11 @@ a
 a
 
 
-;; todo
 (setf a (make-array 1))
-a
+(print a)
 (push 5 (aref a 0))
 (aref a 0)
-a
+(print a)
 
 ;; booleans and conditionals
 (if t 5 6)
@@ -265,7 +297,7 @@ a
 
 (setf a 10)
 (if (> a 4)
-    (progn
+    (progn ; to evaluate one more multiple forms
       (print "i'm true")
       (print "i'm going to do something dumb")
       (setq ccc "1000")
@@ -278,6 +310,13 @@ a
   (progn
     (setf w "today is a good day")
     (concatenate 'string w " yay!!!")))
+
+(when t
+  (setf w "today is a good day")
+  (concatenate 'string w " yay!!!"))
+
+
+
 
 (unless nil 4)
 (unless t 4)
@@ -294,8 +333,8 @@ a
   ((evenp c) (print "i'm even"))
   ((> c 100) (print "i'm not even and i'm >2"))
   (t "this is else"))
-   
-   
+
+
 (defun hotp (x y)
   (cond
     ((= x 1) y)
@@ -304,11 +343,11 @@ a
 (hotp 3 2)
 
 
-(defun hotpo (x steps)        
-    (cond
-     ((= x 1) steps)
-     ((oddp x) (hotpo (+ 1 (* x 3)) (+ 1 steps)))
-     (t (hotpo (/ x 2) (+ 1 steps)))))
+(defun hotpo (x steps)
+  (cond
+    ((= x 1) steps)
+    ((oddp x) (hotpo (+ 1 (* x 3)) (+ 1 steps)))
+    (t (hotpo (/ x 2) (+ 1 steps)))))
 (hotpo 7 0)
 
 
@@ -321,14 +360,34 @@ a
   (otherwise 11111))
 
 
+(first (list 1 2))
+(first '(1 2))
+(first (quote (1 2)))
+(first '(1 2))
+(first (quote (1 2)))
+
+(first (list 'a 'b))
+(list 'a 'b)
+
+'a
+
+
 
 (setf a 5)
 (loop
-   (setq a (+ a 1))
-   (when (> a 7)
-     (progn
-       (print a)
-       (return "hahaha"))))
+  (setq a (+ a 1))
+  (when (> a 7)
+    (progn
+      (print a)
+      (return "hahaha"))))
+
+
+(loop
+(setq x 1)
+(if (< x 10)(setq x (+ x 1))(return)))
+
+
+
 
 
 ;; bind a list to variable and return nil when hits end. so it always return nil
