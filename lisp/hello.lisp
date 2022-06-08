@@ -1,30 +1,5 @@
-'foo
-
-(intern "aaa")
-
-
-22/3
-
-(+ 12 2)
-
-(quote (+ 1 2))
-
-'(+ 1 2)
-
-(and t nil)
-(or t nil)
-
-
-(concatenate 'string "hello" "world")
-(concatenate 'string ("hello" "world"))
-(string "a")
-
-()
-;; ---------------------------------------------
-;; ---------------------------------------------
-;; ---------------------------------------------
-
-(write-line "hello world")
+;; this is the first time learning
+;; (write-line "hello world")
 
 (defun hello ()
   (format t "hello, world!~%"))
@@ -373,9 +348,10 @@ a
 
 
 
-(setf a 5)
+(setq a 5)
 (loop
   (setq a (+ a 1))
+  (incf a)
   (when (> a 7)
     (progn
       (print a)
@@ -388,7 +364,8 @@ a
 
 
 
-
+a
+(if (< a 5)(print "<7")(print ">=7"))
 
 ;; bind a list to variable and return nil when hits end. so it always return nil
 (dolist (x '(a b c)) (print x))
@@ -441,4 +418,19 @@ a
 (setf a (append '(1 2) '(32 2 "a")))
 a
 (reverse a)
+
+(setq x 1)
+(loop
+  (when (> x 9)(return)(incf x)))
+
+(setq a 11)
+(loop
+  (if (< a 7)(return "over")
+      (progn(print a) (decf a))))
+
+(setq x 1)
+(loop (when (evenp x)
+	(progn (print x)(return)))
+      (incf x))
+
 
