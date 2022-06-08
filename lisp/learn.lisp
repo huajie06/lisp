@@ -1,115 +1,68 @@
-;;; symbol
+(defvar *db* nil)
 
-'foo
+(defun make-cd(title author)
+  (list :title title :author author))
 
-;;; single and double
+(defun add-cd(cd)
+  (push cd *db*))
 
-3.1455s0
-3.1455d0
+;(make-cd "title1" "zhou")
 
-(+ 1 2)
+(add-cd(make-cd "title1" "zhou"))
+(add-cd(make-cd "title2" "zhouzhou"))
+(add-cd(make-cd "liqixiang" "zhou jielun"))
 
-;;; below two are the same
-(quote (+ 1 2))
-'(+ 1 2)
+(defun dump-cd (*db*)
+  (dolist (cd *db*)
+    (format t "~{~a:~10t~a~%~}~%" cd)))
 
-(or t 1)
-(or nil ()) ;empty () is all nil
+(dump-cd *db*)
 
-;;; characters, and strings are arrays of chars
-#\a
-"hello"
+(defun save-db (filename)
+  (with-open-file (out filename
+		       :direction :output
+		       :if-exists :supersede)
+    (with-standard-io-syntax (print *db* out))))
 
-;;; nil will return value, t will print and return nil
-(format nil "~A, ~A!" "hello" " world")
-(format t "~A, ~A!" "hello" " world")
+(save-db "test-db.txt")
 
-;;(write-line (let 'me "dance"))
+(defun load-db (filename)
+  (with-open-file (in filename)
+    (with-standard-io-syntax
+      (setf *db* (read in)))))
 
-
-;;; structs
-(defstruct dog name breed age)
-(defparameter *rover*
-    (make-dog :name "rover"
-              :breed "collie"
-              :age 5))
-
-(defparameter *max*
-  (make-dog :name "xxx"
-	    :breed "shiba inu"
-	    :age 100))
-
-(dog-p *rover*)
-(dog-age *rover*)
-(dog-name *max*)
+;;(setq *db* nil)
+(load-db "test-db.txt")
+*db*
 
 
-;;; pairs
+(defun select (selector-fn)
+  (remove-if-not selector-fn *db*))
 
-(cons 'abc 'bac)
+(defun where (&key title author)
+  #'(lambda (cd)
+      (and
+       (if title (equal (getf cd :title) title) t)
+       (if author (equal (getf cd :author) author) t))))
 
-;car ("contents of the address part of register number") 
-;cdr ("contents of the decrement part of register number")
-(car (cons 'abc 'bac))
-(cdr (cons 'abc 'bac))
-
-
-;same
-(list 1 2 3)
-'(1 2 3)
-
-;;; list
-(append '(1 2) '(3 4))
-(concatenate 'list '(1 23 4) '(1 2))
-(remove-if-not #'evenp '(1 2 3 4))
+(select (where :title "qilixiang"))
+(select (where :title "liqixiang"))
+(select (where :author "zhou"))
+*db*
 
 
-;;; vector
-#(1 2)
-
-
-;;; functions
-
-(lambda () "hello world")
-
-(defun hello-world () "Hello World")
-(hello-world)
-
-(defun hello (name)
-  (format nil "Hello, ~A" name))
-(hello "xxx")
-
-(defun hello1 (name &key from timenow)
-  (format nil "~A from: ~A, at: ~A " name from timenow))
-(hello1 "jim" :from "us" :timenow "11:11")
-
-
-;;; control flow
-(if (or 1 nil)
-    "this is real"
-    "not real")
-
-
-;; (let ((s 9))
-;; (cond ((> s 100)(write-line "greater than 2"))
-;;        ((<= s 0)(write-line "less than 2"))
-;;        (t (write-line "1-100"))))
-
-(let ((a 1)(b 2)(c 3))
-  (if (and (> b 1) (> a 1) (> c 1))
-      "all of the 3 >1"
-      "osomething else"))
-
-(let ((s -100))
-  (cond
-    ((> s 100)(format nil "~A > 100" s))
-    ((< s 0)(format nil "~A is negtive" s))
-    (t (write-line "something else"))))
+(defun update (selector-fn &key title author)
+  (setf *db*
+	(mapcar
+	 #'(lambda (row)
+	     (when (funcall selector-fn row)
+	       (if title (setf (getf row :title) title))
+	       (if author (setf (getf row :author) author)))
+	     row) *db*)))
+*db*
+(update (where :author "zhou") :title "fantexi")
+(save-db "test-db.txt")
 
 
 
-
-(defun foo ()
-  (dotimes (i 10)
-    (format t "~d. hello~%" i) ) )
-(foo)
+(select (where :author "zhou jielun"))

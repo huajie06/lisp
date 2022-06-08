@@ -1,3 +1,5 @@
+;; this is the first time learning
+
 ;; (write-line "hello world")
 
 (defun hello ()
@@ -322,14 +324,16 @@ a
 
 
 
-(setf a 5)
+(setq a 5)
 (loop
-   (setq a (+ a 1))
-   (when (> a 7)
-     (progn
-       (print a)
-       (return "hahaha"))))
+  (incf a)
+  (when (> a 7)
+    (progn
+      (print a)
+      (return "hahaha"))))
 
+a
+(if (< a 5)(print "<7")(print ">=7"))
 
 ;; bind a list to variable and return nil when hits end. so it always return nil
 (dolist (x '(a b c)) (print x))
@@ -382,4 +386,19 @@ a
 (setf a (append '(1 2) '(32 2 "a")))
 a
 (reverse a)
+
+(setq x 1)
+(loop
+  (when (> x 9)(return)(incf x)))
+
+(setq a 11)
+(loop
+  (if (< a 7)(return "over")
+      (progn(print a) (decf a))))
+
+(setq x 1)
+(loop (when (evenp x)
+	(progn (print x)(return)))
+      (incf x))
+
 
