@@ -390,13 +390,14 @@ a
 
 
 ;; lambda
-(lambda (x) (+ x 12))
-(funcall * 3)
+((lambda (x) (+ x 12)) 10)
+
+((lambda (x y)(* x y)) 10 20)
+(funcall (lambda (x y)(* x y)) 10 20)
 
 
 
 (funcall (lambda (x) (* x 3)) 2)
-
 (mapcar (lambda (x) (+ x 2)) '(1 2 3 4))
 
 
