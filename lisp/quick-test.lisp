@@ -179,11 +179,6 @@ var1
 (print-list '(a xxx bds kwek fjk))
 
 
-
-
-
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;                                                      ;;;
 ;;;                     functions                        ;;;
@@ -226,6 +221,18 @@ var1
 (apply #'+ (quote (1 2)))
 (apply #'/ (list 12 3))
 
+(defun sum-all(&rest y)
+  (let ((x 0))
+    (dolist (i y)
+      (setf x (+ x i))) x))
+
+(sum-all 1 2 3)
+
+;;; notice the difference
+(apply #'sum-all '(1 23 3))
+(funcall #'sum-all 1 23 3)
+
+;; this is apply a function to individual element of a list 
 (mapcar #'exp '(1 2))
 
 (exp 3)
@@ -241,16 +248,87 @@ var1
 ;; the function takes 1 parameter then should be len 1 list
 (apply #'+ '(1 2 3))
 
+
+;;; notice the difference
 (apply #'exp '(1))
 (funcall #'exp 1)
 
 (apply #'max 4 '(1 2 3))
 
+;; notice paren about the lambda
+((lambda (x y)(+ x y)) 1 2)
+
 ()
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;                                                      ;;;
+;;;                     variables                        ;;;
+;;;                                                      ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(let ((x 1) (y 2))
+  (+ x y))
+
+(setf y 100)
+;; notice y will be 
+(let ((x 10) (y (+ x 10)))
+  (print y)
+  (list x y))
+
+(let* ((x 10) (y (+ x 10)))
+  (print y)
+  (list x y))
+
+;; closure -> The key thing to understand about closures is that it's
+;; the binding, not the value of the variable
 
 
+(setf x 0)
+(funcall #'(lambda () (setf x (+ x 1)))) ; the x value will be retained
+(funcall #'(lambda () (setf x (+ x 1))))
+(funcall #'(lambda () (setf x (+ x 1))))
 
 
+;;; global variables
+
+(defvar *g-var-defvar* nil)
+(push 'a *g-var-defvar*)
+*g-var-defvar*
+;; if you re-defvar, the value doesn't change, kind of the binding
+;; doesn't change
+
+(defvar *g-var-defvar* nil)
+*g-var-defvar*
+
+(defparameter *g-var-defpar* nil)
+(push 'b *g-var-defpar*)
+*g-var-defpar*
+;; now it will reassign the binding
+(defparameter *g-var-defpar* nil)
+*g-var-defpar*
+
+;; wrap `+` around is also just a convention
+(defconstant +c+ 100)
++c+
+
+(setf x 1)
+(incf x)
+(decf x)
+
+
+(setf a 1)
+(setf b 2)
+a
+b
+(rotatef a b)
+b
+a
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;                                                      ;;;
+;;;                       macros                         ;;;
+;;;                                                      ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
