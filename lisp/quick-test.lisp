@@ -206,7 +206,7 @@ var1
 (foo3 1 23 21 231 1)
 
 
-(defun foo4 (a &optional a1 &key b c) 
+(defun foo4 (a &optional a1 &key b c)
   (list a a1 b c))
 (foo4 1 2 :b 2 :c 3)
 (foo4 2 :b 2 :c 3) ;will error, don't use mix
@@ -232,7 +232,7 @@ var1
 (apply #'sum-all '(1 23 3))
 (funcall #'sum-all 1 23 3)
 
-;; this is apply a function to individual element of a list 
+;; this is apply a function to individual element of a list
 (mapcar #'exp '(1 2))
 
 (exp 3)
@@ -271,7 +271,7 @@ var1
   (+ x y))
 
 (setf y 100)
-;; notice y will be 
+;; notice y will be
 (let ((x 10) (y (+ x 10)))
   (print y)
   (list x y))
@@ -331,4 +331,176 @@ a
 ;;;                       macros                         ;;;
 ;;;                                                      ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(if t (format t "this is true")
+    (format t "this is false"))
+
+(if t "true" "false")
+(if nil "true" "false")
+
+;;; if only allows to do like one-form at a time, you need to use progn
+
+(if t ((print 1) (print 2)) "false") ; this will give error
+
+;; so instead you need to do this
+(if t (progn
+        (setf x 1)
+        (incf x)) "this is where false happen")
+
+;;; a close look at the `when` macro
+;;; it's defined in this way
+;;; (defmacro when (condition &rest body)
+;;;        `(if ,condition (progn ,@body)))
+(when t "a")
+(when t (setf a 1)
+      (setf b (/ a 2))
+      (setf c (* b 100)))
+
+;;; so we can define a second when similarly
+(defmacro when2 (condition &rest body)
+  `(if ,condition (progn ,@body)))
+
+(when2 t (write-line "hello"))
+(when2 t (setf x "hello"))
+
+(unless nil "do something only when nil")
+(when t "do something only when t" )
+
+(setf a 2)
+(cond ((= a 1) (write-line "this is 1"))
+      ((= a 2) (write-line "this is 2"))
+      (t (write-line "this is else")))
+
+;; and or not
+
+(and t t nil)
+(or t t nil)
+(and (not t) (not t) nil)
+(or (not t) (not t) nil)
+
+
+(dolist (x '(1 2 3))
+  (print x))
+
+;; start from 0, use return to breakout
+(dotimes (i 10)
+  (if (< i 5) (print i) (return)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;                       ;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;  need to revisit      ;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;                       ;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; loop form, the initial value and step-form
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;                                                      ;;;
+;;;              chapter 8: define macro                 ;;;
+;;;                                                      ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;; integer
+(isqrt 10)
+(sqrt 10)
+
+(setf x 10)
+(loop for fac from 2 to (isqrt x)
+      never (zerop (mod x fac)))
+
+;;; never => if every single form is evaluted as `nil` then return T,
+;;; otherwise, as long as one has `T` it will return nil
+(loop for i from 2 to 10
+      never (= i 20))
+
+
+;; function to determine if it's prime
+;;(setf q (floor (sqrt 10)))
+(defun primep (x)
+  (loop for i from 2 to (floor (sqrt x))
+  never (= (mod x i) 0)))
+
+(defun primep2 (x)
+  (loop for i from 2 to (isqrt x)
+  never (zerop (mod x i))))
+
+(primep 7)
+(primep2 7)
+
+(loop for i from 2 to (sqrt 10)
+      (print i))
+
+
+;;; function to find next prime
+;;; the return will break out
+(loop for i from 1 when (> i 10) return i)
+
+(loop for i from 100 when (primep i) return i)
+
+(primep 2)
+
+(defun next-prime (x)
+  (loop for i from (incf x) when (primep i) return i))
+
+(next-prime 101)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;         macros         ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(setf a (list 1 2))      ;this is what i want
+
+(defmacro setf2 (a b c)
+  `(setf a (list ,b ,c)))
+
+(setf2 a 1 2)
+
+(macroexpand-1 '(setf2 a 2 3))
+(macroexpand '(setf2 a 2 3))
+
+;; example below
+(list 'setf x 3)
+(defmacro play (x)
+  (list 'setq x 3))
+
+(macroexpand '(play x))
+(play x)
+
+;;; thinking of doing this
+(setf x y 1)
+;;; but it should be
+(progn (setf x 1) (setf y 1))
+
+(list x y)
+(defmacro setf3 (x y val)
+  `(progn (setq x ,val) (setq y , val)))
+
+(setf3 x y 100)
+(macroexpand '(setf3 x y 100))
+
+'(list 1 2)
+`(list 1 2)
+`(,list 1 2) ; this will give error
+
+(setf x 10)
+`(list x 2)
+`(list ,x 2)
+
+;;; do loop, initial value, value step
+(do ((var1 3 (1+ var1)))
+    ((> var1 10) (* var1 2)) ;; the * is the final statement, only 1 exist paren
+  (print var1)               ;; this is the action during loop, can have as many
+  (print "---")
+  (print (+ var1 2)))
+
+(macroexpand '(do ((var1 1 (1+ var1))) ((> var1 3)(+ var1 1000))))
+
+(macroexpand '(setf x 1))
+(macroexpand '(setq x 1)) ;; this is not a macro
+
+
+
 
