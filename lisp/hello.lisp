@@ -128,7 +128,7 @@ a
 
 ;; key arguments
 (defun test (&key a b)
-  (+ a b)))
+  (+ a b))
 (test :a 1 :b 2)
 
 ;; key arguments with default

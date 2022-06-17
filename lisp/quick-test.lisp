@@ -205,6 +205,9 @@ var1
   (list a b))
 (foo3 1 23 21 231 1)
 
+(defun foo33 (a &rest b)
+  (append (list a) b))
+(foo33 1 23 21 231 1)
 
 (defun foo4 (a &optional a1 &key b c)
   (list a a1 b c))
@@ -244,6 +247,8 @@ var1
 (+ 1 2)
 (funcall #'exp 2)
 (exp 2)
+(funcall #'expt 2 4)
+(expt 2 4)
 
 ;; the function takes 1 parameter then should be len 1 list
 (apply #'+ '(1 2 3))
@@ -282,8 +287,6 @@ var1
 
 ;; closure -> The key thing to understand about closures is that it's
 ;; the binding, not the value of the variable
-
-
 (setf x 0)
 (funcall #'(lambda () (setf x (+ x 1)))) ; the x value will be retained
 (funcall #'(lambda () (setf x (+ x 1))))
@@ -291,7 +294,6 @@ var1
 
 
 ;;; global variables
-
 (defvar *g-var-defvar* nil)
 (push 'a *g-var-defvar*)
 *g-var-defvar*
@@ -430,7 +432,7 @@ a
 (primep2 7)
 
 (loop for i from 2 to (sqrt 10)
-      (print i))
+      do (print i))
 
 
 ;;; function to find next prime
@@ -444,7 +446,113 @@ a
 (defun next-prime (x)
   (loop for i from (incf x) when (primep i) return i))
 
-(next-prime 101)
+(next-prime 104)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;        some loop                  ;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;need progn to execute more than 1 form
+(loop for i from 1 to 6
+      do (when (evenp i) (progn (print "this is even!")(return i))))
+
+(loop for i from 1 to 5
+      for j from 1
+      do ;(print i)
+      (when (> j 2) (progn (print "haha return now!")(return i))))
+
+(let ((start 1))
+  (incf start) start)
+
+(do ((x 0 (+ x 2)) ;; this is a do loop syntax
+     (y 1 (+ y 2)))
+    ((> y 10))
+  (format t "x = ~A y = ~A~%" x y))
+
+;;; loop over primes
+
+(defun primep (x)
+  (loop for i from 2 to (isqrt x)
+  never (zerop (mod x i))))
+
+(defun next-prime (x)
+  (loop for i from (incf x) when (primep i) return i))
+
+(setf x 1)
+(if (= x 0) t nil)
+
+(primep 7)
+(next-prime 7)
+(do ((x 4 (next-prime x))
+     (y 1 (+ y 1)))
+    ((> x 30))
+  (when (not (= y 1)) (format t "prime: ~A~%" x)))
+
+(setf y 10)
+(do ((x (next-prime y) (next-prime x)))
+    ((> x 20))
+  (print x))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro loop-prime ((var start end) &body body)
+  "the function to loop through list of prime"
+  `(do ((,var ,start (next-prime ,var))
+        (y 1 (+ y 1)))
+        ((> ,var ,end))
+     (when (not (= y 1))
+       ,@body))) ;; here it need `,@` instead of `,` is because body
+                 ;; will be in list, in othe words, it's wrapped
+                 ;; around with `()`. so for example, if you have
+                 ;; (print x), the body is really ((print x))
+
+;;; within a macro or func even, sometimes it's better to use `gensym`
+(defmacro loop-prime ((var start end) &body body)
+  "the function to loop through list of prime"
+  `(do ((,var ,start (next-prime ,var))
+        (y 1 (+ y 1))
+        (end-val ,end))
+        ((> ,var end-val))
+     (when (not (= y 1))
+       ,@body)))
+
+
+(macroexpand-1 '(loop-prime (x 0 30) (print x)))
+(macroexpand-1 '(loop-prime (x 0 (random 20)) (print x)))
+(loop-prime (v 4 20) (print v))
+(loop-prime (v 0 (random 30)) (print v))
+
+;; notice the input pare difference
+(defmacro loop-prime1 (var start end &body body)
+  `(do ((,var (next-prime ,start) (next-prime ,var)))
+       ((> ,var ,end))
+     ,@body))
+
+
+;;; gensym example here
+
+(setf val-name (gensym))
+;; now var start, end are all in a list
+(defmacro loop-prime2 ((var start end) &body body)
+  (let ((ending-value-name (gensym)))
+    `(do ((,var (next-prime ,start) (next-prime ,var))
+          (,ending-value-name ,end))
+         ((> ,var ,ending-value-name))
+       ,@body)))
+(loop-prime2 (x 9 24) (print x))
+
+
+
+
+( )
+;; (macroexpand '(do ((x 0 (+ 2 x))
+;;      (y 1 (+ 1 y)))
+;;     ((> y 10))
+;;   (format t "x = ~d y = ~d~%" x y)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -456,34 +564,43 @@ a
 (defmacro setf2 (a b c)
   `(setf a (list ,b ,c)))
 
-(setf2 a 1 2)
+;;; to demo gensysm
+(defmacro setf3 (a b c)
+  (let* ((v1 (gensym))
+         (v2 (gensym))
+         (v1 b)
+         (v2 c))
+    `(setf a (list ,v1 ,v2))))
+
+(setf3 a 1 2)
 
 (macroexpand-1 '(setf2 a 2 3))
+(macroexpand-1 '(setf3 a 2 3))
 (macroexpand '(setf2 a 2 3))
 
 ;; example below
+(setf x 1)
 (list 'setf x 3)
 (defmacro play (x)
   (list 'setq x 3))
 
-(macroexpand '(play x))
+(macroexpand-1 '(play x))
 (play x)
 
-;;; thinking of doing this
+;;; wanted to  this
 (setf x y 1)
 ;;; but it should be
 (progn (setf x 1) (setf y 1))
 
 (list x y)
-(defmacro setf3 (x y val)
+(defmacro setf4 (x y val)
   `(progn (setq x ,val) (setq y , val)))
 
-(setf3 x y 100)
-(macroexpand '(setf3 x y 100))
+(setf4 x y 100)
+(macroexpand-1 '(setf4 x y 100))
 
 '(list 1 2)
 `(list 1 2)
-`(,list 1 2) ; this will give error
 
 (setf x 10)
 `(list x 2)
@@ -491,16 +608,23 @@ a
 
 ;;; do loop, initial value, value step
 (do ((var1 3 (1+ var1)))
-    ((> var1 10) (* var1 2)) ;; the * is the final statement, only 1 exist paren
-  (print var1)               ;; this is the action during loop, can have as many
+    ((> var1 10) (* var1 2)) ;; the * is the final statement, only 1
+                             ;; paren, would need progn if multiple
+  (print var1)               ;; this is the action during loop, can
+                             ;; have as many
   (print "---")
   (print (+ var1 2)))
 
-(macroexpand '(do ((var1 1 (1+ var1))) ((> var1 3)(+ var1 1000))))
+(macroexpand-1 '(do ((var1 1 (1+ var1))) ((> var1 3)(+ var1 1000))))
 
-(macroexpand '(setf x 1))
-(macroexpand '(setq x 1)) ;; this is not a macro
+(random 100)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;                                                      ;;;
+;;;         chapter 9. build a unit test                 ;;;
+;;;                                                      ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-
+;;; collect
+(loop for i in '(1 2 3)
+      collect (* 2 i))
