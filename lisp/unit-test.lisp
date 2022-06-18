@@ -1,3 +1,5 @@
+(defvar *test-name* nil)
+
 (defun report-result (result form)
   (format t "~:[Fail!~;pass~] ... ~a: ~a~%" result *test-name* form) result)
 
@@ -11,6 +13,29 @@
          ;;do (report-result f f)))
          ;;do (print f)))
          ;;collect (print f)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;       intermedia step           ;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; the check-play need a wrapper around it
+(check-play
+  (= (/ 99 2) 1)
+  (= (/ 99 2) 3))
+;; =>
+(list (REPORT-RESULT (= (/ 99 2) 1) '(= (/ 99 2) 1))
+ (REPORT-RESULT (= (/ 99 2) 3) '(= (/ 99 2) 3)))
+
+;; what we want is this
+(let ((result t))
+  (unless (REPORT-RESULT (= (/ 99 2) 1) '(= (/ 99 2) 1)) (setf result nil))
+  (unless (REPORT-RESULT (= (/ 99 2) 3) '(= (/ 99 2) 3)) (setf result nil))
+  result)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;    intermedia step end          ;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 
 (defmacro combine-results(&body forms)
     `(let ((result t))
@@ -49,7 +74,6 @@
   (= (* 1 2) 2)
   (= (/ 10 2) 5))
 
-(defvar *test-name* nil)
 
 (defmacro deftest (name parameters &body body)
   `(defun ,name ,parameters
