@@ -98,6 +98,7 @@
 
 (sort (vector "a" "c" "baz") #'string<)
 (sort (vector "a" "c" "baz") #'string>)
+;;(sort (vector "a" "c" "baz") #'char>)
 
 (merge 'list '(1 3 5) '(2 4 6) #'<)
 (merge 'vector #("ab" "b") #("a" "z") #'string<)
@@ -115,5 +116,33 @@
 (notany #'evenp #(1 2 3 4 5))   ==> NIL
 (notevery #'evenp #(1 2 3 4 5)) ==> T
 
+(every #'(lambda (x) (if (> x 3) t nil)) #(1 2 3 4 5))
+(some #'(lambda (x) (if (> x 3) t nil)) #(1 2 3 4 5))
 
-(print "a")
+(some #'> #(1 2 3 4) #(5 4 3 2))
+(every #'> #(1 2 3 4 5) #(5 4 3 2))
+
+(map 'vector #'max #(1 4 293 2 3) #(1 2 3 4 5))
+(reduce #'max #(1 4 293 2 3))
+
+;;; get gethash returns two things
+(setf tb (make-hash-table))
+(gethash 'too tb)
+(setf (gethash 'too tb) 'xxx)
+(setf (gethash 'too1 tb) nil)
+(setf (gethash 'too2 tb) 'hello)
+tb
+(gethash 'too tb)
+(if (gethash 'too tb) 'find 'no-find)
+(if (gethash 'too1 tb) 'find 'no-find)
+(gethash 'too1 tb)
+(remhash 'too1 tb)
+
+(multiple-value-bind (result find-or-not) (gethash 'too1 tb)
+  (if find-or-not
+      (format t "---value found: ~a" result)
+      (format t "---not find")))
+
+
+(maphash #'(lambda (k v) (format t "key: ~a, value: ~a~%" k v)) tb)
+
