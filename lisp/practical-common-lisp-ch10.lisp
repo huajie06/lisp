@@ -125,7 +125,7 @@
 (map 'vector #'max #(1 4 293 2 3) #(1 2 3 4 5))
 (reduce #'max #(1 4 293 2 3))
 
-;;; get gethash returns two things
+;;; gethash returns two things
 (setf tb (make-hash-table))
 (gethash 'too tb)
 (setf (gethash 'too tb) 'xxx)
