@@ -126,3 +126,9 @@ y1
 (mapcar #'+ (list 1 2 3) (list 10 20 30 3)) ==> (11 22 33)
 
 
+
+
+;; there's additional data structures on top of cons
+;; such as trees/sets/alist(association list)/plist(property list)
+
+

@@ -38,6 +38,15 @@
 	    until (eq line 'foo) do (print line))
       (print "not found")))
 
+;;;; this will yield eof file error without `nil`
+;;;; with the nil, the process will no stop by keep yielding nil at eof
+(with-open-file (stream "~/repo/apps/google/credentials.json" :if-does-not-exist nil)
+  (if stream
+      (loop for line = (read-line stream nil)
+	    while line do (print line))
+      (print "not found")))
+
+
 
 ;;;;;;;;;== some loop
 (loop for i in (list 1 2 3)
@@ -67,3 +76,92 @@
 (loop for i in (list 1 2 3)
       for y = (* 100 i)
       while (<= y 200) collect y)
+
+
+(defparameter file-name "~/repo/lisp/clojure/hello.clj")
+(with-open-file (s file-name :if-does-not-exist nil :element-type '(unsigned-byte 8))
+  (if s
+      (loop for b = (read-byte s nil)
+	    while b do(print b))
+      (print "file does not exist")))
+
+
+;; this is not a loop, simply get create a string vector, alter the value of it
+(defparameter infile "~/repo/lisp/clojure/hello.clj")
+(with-open-file (instream infile :direction :input :if-does-not-exist nil)
+  (when instream
+    (let ((string-result (make-string (file-length instream))))
+      (read-sequence string-result instream)
+      string-result)))
+
+
+(with-open-file (instream infile :if-does-not-exist nil)
+  (when instream
+    (file-length instream)))
+
+(with-open-file (instream infile :if-does-not-exist nil)
+  (when instream
+    (loop for line = (read-line instream nil)
+	  for i from 1
+	  while line do
+	    (format t "line #~a length: ~a~%" i (length line)))))
+
+
+
+;;;;;;write to file
+
+;;(let ((outstream (open "test-file-out.txt" :direction :output :if-exists nil)))
+(let ((outstream (open "test-file-out.txt" :direction :output :if-exists :append)))
+  (when outstream
+    (progn
+      (write-line "hello world!" outstream)
+      (close outstream))))
+
+(let ((outstream (open "test-file-out.txt" :direction :output :if-exists :supersede)))
+  (when outstream
+    (progn
+      (write-line "hello world!" outstream)
+      (close outstream))))
+
+
+(with-open-file (outstream "test-file-out2.txt" :direction :output :if-exists :supersede)
+  (when outstream
+    (write-sequence "what the heck" outstream)))
+
+
+
+
+(pathname-device (pathname "~/repo/apps/sec/get_13f.py"))
+(pathname-directory (pathname "~/repo/apps/sec/get_13f.py"))
+(pathname-name (pathname "~/repo/apps/sec/get_13f.py"))
+(pathname-type (pathname "~/repo/apps/sec/get_13f.py"))
+
+
+(namestring (pathname "~/repo/apps/sec/get_13f.py"))
+(file-namestring (pathname "~/repo/apps/sec/get_13f.py"))
+(directory-namestring (pathname "~/repo/apps/sec/get_13f.py"))
+
+(make-pathname
+ :directory '(:absolute "repo" "app" "sec"); cannot be "~/repo/apps/sec/get_13f.py"
+ :name "something"
+ :type "lisp")
+
+(namestring (make-pathname
+	     :directory '(:absolute "repo" "apps" "sec")
+	     :name "something"
+	     :type "lisp"))
+
+(merge-pathnames #p"~/bacd/abc/" #p"abd/123.py")
+
+
+(let ((stream (make-string-input-stream "test string")))
+  (loop for line = (read-line stream nil)
+	while line
+	do (format t "~a" line))
+  (close stream))
+
+(with-input-from-string (str "Foobar")
+  (loop for i from 0
+        for line = (read-line str nil)
+        while line
+        do (format t "~d: ~a~%" i line)))
