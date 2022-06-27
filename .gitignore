@@ -3,3 +3,9 @@ sbcl.core-for-slime
 .DS_Store
 
 *test-db*
+
+
+*nogit*
+
+
+*.txt
