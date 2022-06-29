@@ -29,13 +29,11 @@
    (high
     :initarg :high)))
 
-
 ;; print the condition
 (defmethod print-object ((obj endpoints-error) stream)
   (print-unreadable-object (obj stream)
     (with-slots (low high) obj
       (format stream "Endpoint error. LOW: ~s, HIGH: ~s" low high))))
-
 
 
 ;; test the print
@@ -138,7 +136,6 @@
 	(validate-range2 range)))))
 
 
-
 (defmethod initialize-instance :after ((obj range) &key)
   (validate-range2 obj))
 
@@ -198,3 +195,6 @@
 (create-range2 :low "x" :high 2)
 
 
+;;;;;;;;;assert
+
+(assert (realp "abc"))
