@@ -111,10 +111,49 @@
 (intern "map")
 
 
+(loop for x across "abcd"
+      do (print x))
 
-*package*
-cl:*package*
+(loop repeat 5
+      do (print "h"))
 
-:a
-keyword:a
-(eql :a keyword:a)
+(loop repeat 4
+      for v = 1 collect (+ v 1))
+
+(loop repeat 4
+      for x = 1 then y
+      for y = 2 then (+ y 1) 
+      do (format t "X: ~a, Y: ~a~%" x y))
+
+(macroexpand-1 '(loop repeat 4
+		 for x = 1 then y
+		 for y = 2 then (+ y 1) 
+		 do (format t "X: ~a, Y: ~a~%" x y)))
+
+(loop repeat 4
+      for x = 1 then y
+      for y = 2 then (+ y 1) 
+      do (format t "X: ~a, Y: ~a~%" x y))
+
+
+(defparameter *random* (loop repeat 100 collect (random 10000)))
+
+(loop for i in *random*
+      counting (evenp i) into even-count
+      counting (oddp i) into odd-count
+      maximizing i into max-val
+      minimizing i into min-val
+      summing i into sum-val
+      finally (return (list :even-count even-count odd-count max-val min-val sum-val)))
+
+
+
+(block outer
+  (loop for i from 0 return 100)
+  (print "This will print")
+  200)
+
+(block outer
+  (loop for i from 0 to 100 do (return-from outer 40))
+  (print "heheheh")
+  1000)
