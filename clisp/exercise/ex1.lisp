@@ -25,6 +25,8 @@
      (t 'unsure))
    score))
 
+(label-text 0.2) ==> values return multiple valude, so it would need multiple-value-bind
+
 ;; text will have many words, so extract each word
 ;; then score each word to get a score, then a text will get a score
 
@@ -54,8 +56,6 @@
 ;; a var to hold the each word scores
 (defvar *feature-database* (make-hash-table :test 'equalp))
 
-
-;; clear db, do why just don't use defparameter?
 (defun clear-database ()
   (setf *feature-database* (make-hash-table :test #'equal)))
 
@@ -78,8 +78,10 @@
 
 (process-text "foo today is a good day! buy me some stuff!")
 
-;; define a function to create train set, if it's spam, spam count +
-;; this is really a manual labeling step
+
+;;;; this is where the process really starts
+;;;; look at a text, get the words, and give a spam/ham count to each words
+;;;; also keep track of all hams and spams so that can calc prob.
 (defun train (text type)
   (dolist (feature (process-text text))
     (increment-count feature type))
@@ -94,17 +96,12 @@
     (spam (incf (:spam-count feature)))
     (otherwise "Type not ham or spam")))
 
-;; (defun increment-count (feature type)
-;;   (ecase type
-;;     (ham (incf (:ham-count feature)))
-;;     (spam (incf (:spam-count feature)))))
-
 (defun increment-total-count (type)
   (ecase type
     (ham (incf *total-hams*))
     (spam (incf *total-spams*))))
 
-;; define a function to clear the variables, reset
+;; resset the variables
 (defun clear-database ()
   (setf
    *feature-database* (make-hash-table :test #'equal)
@@ -182,6 +179,7 @@
 *feature-database*
 (loop for v being each hash-value of *feature-database*
       do (print v))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; get file from out source
@@ -203,10 +201,30 @@
     (unless (search "DS_Store" (namestring fname))
       (add-file-to-corpus fname type corpus))))
 
+
+;;; lump the tree function into one
+;;; it create a corpus(plist): each file=>correspond spam/ham
+(defun add-all-files-in-dir-to-corpus (dir type corpus)
+  (let ((flist (directory (make-pathname
+			   :directory (list :absolute *wd* dir)
+			   :type :wild
+			   :name :wild))))
+    (dolist (fname flist)
+      (unless (search "DS_Store" (namestring fname))
+	(vector-push-extend (list fname type) corpus)))))
+
+
 (defparameter *corpus* (make-array 1000 :adjustable t :fill-pointer 0))
+(defparameter *corpus1* (make-array 1000 :adjustable t :fill-pointer 0))
 
 (add-directory-to-corpus "easy_ham/easy_ham" 'ham *corpus*)
 (add-directory-to-corpus "spam_2/spam_2" 'spam *corpus*)
+(add-all-files-in-dir-to-corpus "easy_ham/easy_ham" 'ham *corpus1*)
+(add-all-files-in-dir-to-corpus "spam_2/spam_2" 'spam *corpus1*)
+
+(equalp *corpus* *corpus1*)
+(length *corpus*)
+(length *corpus1*)
 
 ;;;
 
@@ -216,14 +234,14 @@
       (train (start-of-file file *max-chars*) type))))
 
 
-
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; my own idea
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(aref *corpus* 1) ==>list, so it would need destructuring-bind
+
 (clear-database)
 (aref *corpus* 0)
+
 (let ((idx 0))
   (destructuring-bind (file type) (aref *corpus* idx)
     (train (read-from-file file) type)))
@@ -289,6 +307,7 @@
   (eql (result-type result) 'missed-spam))
 
 (defparameter *test-result (subseq (test-from-corpus *corpus* :end 1000) 0 10))
+
 *test-result
 (type-of *test-result)
 (getf (car *test-result) :actual)
@@ -325,14 +344,20 @@
 		    label val (/ val (/ total 100))))))
 
 ;;(analyze-results1 *test-result)
-(analyze-results2 *test-result)
-(analyze-results2 (test-from-corpus *corpus* :end 100))
-(analyze-results2 (test-from-corpus *corpus* :end 3500))
+;; (analyze-results2 *test-result)
+;; (analyze-results2 (test-from-corpus *corpus* :end 100))
+;; (analyze-results2 (test-from-corpus *corpus* :end 3500))
+
+(defparameter *tmp-result* (test-from-corpus *corpus* :end 3500))
+(analyze-results2 *tmp-result*)
 
 ;;;;;;
 
+(remove-if-not #'false-positive-p *tmp-result*)
+(subseq (remove-if-not #'missed-spam-p *tmp-result*) 0 5)
 
-===
+
+=====================
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; random code below
@@ -415,7 +440,7 @@
 
 (length *corpus*)
 *feature-database*
-
+(gethash "some" *feature-database*)
 
 (loop for i in (list 1 2 3)
       with y = 10
@@ -448,4 +473,6 @@
 ;;       do (print result))
 ;; (result-type '(:FNAME "0092" :ACTUAL HAM :PREDICTED UNSURE :SCORE 0.5263238113376796d0))
 ;; (result-type1 '(:FNAME "0092" :ACTUAL HAM :PREDICTED UNSURE :SCORE 0.5263238113376796d0))
+
+
 
