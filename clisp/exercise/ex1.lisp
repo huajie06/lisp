@@ -200,7 +200,8 @@
 
 (defun add-directory-to-corpus (dir type corpus)
   (dolist (fname (list-directory dir))
-    (add-file-to-corpus fname type corpus)))
+    (unless (search "DS_Store" (namestring fname))
+      (add-file-to-corpus fname type corpus))))
 
 (defparameter *corpus* (make-array 1000 :adjustable t :fill-pointer 0))
 
@@ -244,50 +245,92 @@
       (train (start-of-file fname *max-read-length*) type))))
 
 (defun test-from-corpus (corpus &key (start 0) end)
-  (loop for i from start below (or end (length corpus)) do
-    (destructuring-bind (fname type) (aref corpus i)
-      (multiple-value-bind (pred score) (classify (start-of-file fname *max-read-length*))
-	(list
-	 :actual type
-	 :predicted pred
-	 :score score)))))
+  (loop for i from start below (or end (length corpus))
+	collect
+	(destructuring-bind (fname type) (aref corpus i)
+	  (multiple-value-bind (pred score) (classify (read-in-file fname *max-read-length*))
+	    (list
+	     :fname (pathname-name fname)
+	     :actual type
+	     :predicted pred
+	     :score score)))))
+
 
 (clear-database)
-(train-from-corpus *corpus*)
-(test-from-corpus *corpus*)
+(train-from-corpus *corpus* :start 3000)
+(test-from-corpus *corpus* :end 1000)
+
 
 (defparameter *max-read-length* (* 10 1024))
-
-(read-from-file "/Users/huajiezhang/repo/lisp/clisp/exercise/email_spam/easy_ham/easy_ham/0008.20bc0b4ba2d99aae1c7098069f611a9b" *max-read-length*)
-
-
-(defun read-from-file (fname max-length)
-  (with-open-file (stream fname :if-does-not-exist nil)
+(defun read-in-file (fname max-length)
+  (with-open-file (stream fname :if-does-not-exist nil :external-format :latin-1)
     (if stream
 	(let* ((valid-length (min (file-length stream) max-length))
 	       (result (make-string valid-length))
-	       (read-result (read-sequence result stream)))
-	  (if (< read-result valid-length)
-	      (subseq result 0 read-result) read-result))
+	       (read-len (read-sequence result stream)))
+	  (if (< read-len valid-length)
+	      (subseq result 0 read-len) result))
 	(print "file does not exist"))))
 
-(defun start-of-file (file max-chars)
-  (with-open-file (in file)
-    (let* ((length (min (file-length in) max-chars))
-           (text (make-string length))
-           (read (read-sequence text in)))
-      (if (< read length)
-	  (subseq text 0 read)
-	  text))))
+
+(defun correct-p (result)
+  (equal (result-type result) 'correct))
+
+(defun false-positive-p (result)
+  (eql (result-type result) 'false-positive))
+
+(defun false-negative-p (result)
+  (eql (result-type result) 'false-negative))
+
+(defun missed-ham-p (result)
+  (eql (result-type result) 'missed-ham))
+
+(defun missed-spam-p (result)
+  (eql (result-type result) 'missed-spam))
+
+(defparameter *test-result (subseq (test-from-corpus *corpus* :end 1000) 0 10))
+*test-result
+(type-of *test-result)
+(getf (car *test-result) :actual)
+(cdr *test-result)
 
 
-(start-of-file "/Users/huajiezhang/repo/lisp/clisp/exercise/email_spam/easy_ham/easy_ham/0008.20bc0b4ba2d99aae1c7098069f611a9b" *max-read-length*)
+(defun result-type (result)
+  (destructuring-bind (&key actual predicted &allow-other-keys) result
+    (ecase actual
+      (ham
+       (ecase predicted
+         (ham 'correct)
+         (spam 'false-positive)
+         (unsure 'missed-ham)))
+      (spam
+       (ecase predicted
+         (ham 'false-negative)
+         (spam 'correct)
+         (unsure 'missed-spam))))))
 
-(let ((fname "/Users/huajiezhang/repo/lisp/clisp/exercise/email_spam/easy_ham/easy_ham/0008.20bc0b4ba2d99aae1c7098069f611a9b"))
-  (with-open-file (stream fname :external-format :us-ascii)
-    (when stream 
-      (loop for line = (read-line stream nil)
-	    while line do (print line)))))
+;;(result-type (car *test-result))
+;;(correct-p (car *test-result))
+
+(defun analyze-results2 (results)
+  (let* ((keys '(total correct false-positive 
+                 false-negative missed-ham missed-spam))
+	 (counts (loop for i in keys collect (cons i 0))))
+    (dolist (item results)
+      (incf (cdr (assoc 'total counts)))
+      (incf (cdr (assoc (result-type item) counts))))
+    (loop for (label . val) in counts
+	  with total = (cdr (assoc 'total counts)) do
+	    (format t "~&~a:~20t ~a~,5t ~6,1f%"
+		    label val (/ val (/ total 100))))))
+
+;;(analyze-results1 *test-result)
+(analyze-results2 *test-result)
+(analyze-results2 (test-from-corpus *corpus* :end 100))
+(analyze-results2 (test-from-corpus *corpus* :end 3500))
+
+;;;;;;
+
 
 ===
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -313,3 +356,96 @@
 
 
 (gethash "some" *feature-database*)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(read-from-file "/Users/huajiezhang/repo/lisp/clisp/exercise/email_spam/easy_ham/easy_ham/0008.20bc0b4ba2d99aae1c7098069f611a9b" *max-read-length*)
+
+
+(read-in-file "/Users/huajiezhang/.vim/vimrc" *max-read-length*)
+(start-of-file "/Users/huajiezhang/.vim/vimrc" *max-read-length*)
+
+(start-of-file "/Users/huajiezhang/repo/lisp/clisp/exercise/email_spam/easy_ham/easy_ham/0008.20bc0b4ba2d99aae1c7098069f611a9b" *max-read-length*)
+
+(let ((fname "/Users/huajiezhang/repo/lisp/clisp/exercise/email_spam/easy_ham/easy_ham/0008.20bc0b4ba2d99aae1c7098069f611a9b"))
+  (with-open-file (stream fname :external-format :latin-1)
+    (when stream 
+      (loop for line = (read-line stream nil)
+	    while line do (print line)))))
+
+
+(destructuring-bind (fname type) (aref *corpus* 1)
+  (pathname-type fname)
+  (pathname-directory fname))
+
+(result-type (car *test-result))
+(assoc  (result-type (car *test-result)))
+
+(defun result-type (result)
+  (destructuring-bind (&key actual predicted &allow-other-keys) result
+    (ecase actual
+      (ham
+       (case predicted
+	 (ham 'correct)
+	 (spam 'false-positive)
+	 (unsure 'missed-ham)
+	 (otherwise 'issue)))
+      (spam
+       (case predicted
+	 (ham 'false-negtive)
+	 (spam 'correct)
+	 (unsure 'missed-spam)
+	 (otherwise 'issue))))))
+
+
+
+(defun analyze-results (results)
+  (let* ((keys '(total correct false-positive 
+		 false-negative missed-ham missed-spam))
+	 (counts (loop for x in keys collect (cons x 0))))
+    (dolist (item results)
+      (incf (cdr (assoc 'total counts)))
+      (incf (cdr (assoc (result-type item) counts))))
+    (loop with total = (cdr (assoc 'total counts))
+	  for (label . count) in counts
+	  do (format t "~&~@(~a~):~20t~5d~,5t: ~6,2f%~%"
+		     label count (* 100 (/ count total))))))
+(analyze-results *test-result)
+(analyze-results (test-from-corpus *corpus* :end 2000))
+
+(length *corpus*)
+*feature-database*
+
+
+(loop for i in (list 1 2 3)
+      with y = 10
+      do (print (/ i y)))
+
+(let ((upto 10))
+  (loop for i from 1 to upto
+	with denminater- = 10
+	do (format t "~&~,2f" (/ i denminater-))))
+
+(defun analyze-results1 (results)
+  (let ((c-counts 0)
+	(total 0)
+	(false-positive 0)
+	(false-negative 0)
+	(missed-ham 0)
+	(missed-spam 0))
+    (dolist (item results)
+      (incf total)
+      (when (eql (result-type item) 'correct) (incf c-counts))
+      (when (eql (result-type item) 'false-negative) (incf false-negative))
+      (when (eql (result-type item) 'false-positive) (incf false-positive))
+      (when (eql (result-type item) 'missed-ham) (incf missed-ham))
+      (when (eql (result-type item) 'missed-spam) (incf missed-spam)))
+    ;;(list total c-counts)
+    (format t "total: ~a~%correct: ~a~%false-n:~a~%false-p:~a~%missed:~a~%"
+	    total c-counts false-negative false-positive (+ missed-ham missed-spam))))
+
+;; (loop for result in (test-from-corpus *corpus* :end 100)
+;;       do (print result))
+;; (result-type '(:FNAME "0092" :ACTUAL HAM :PREDICTED UNSURE :SCORE 0.5263238113376796d0))
+;; (result-type1 '(:FNAME "0092" :ACTUAL HAM :PREDICTED UNSURE :SCORE 0.5263238113376796d0))
+
