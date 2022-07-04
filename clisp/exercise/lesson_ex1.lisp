@@ -26,7 +26,7 @@
 (defparameter *test-array2* (make-array 10 :adjustable t :fill-pointer 0))
 *test-array*  ==>10 zeros, it can not push
 *test-array1* ==>only 3 zeros
-*test-array2* ==>no zeros 
+*test-array2* ==>no zeros
 (vector-push (list 1 2) *test-array2*)
 *test-array2*
 (aref *test-array2* 0)
@@ -67,7 +67,7 @@
 	   (incf (cdr (assoc 'c var-cons)) k))
   var-cons)
 
-;; assoc works with `a list` == list of list and return based on first element match
+;; assoc works with `a list` == list of list, and return based on first element match
 (assoc 'a '((a 999)(b 'b)(c 'c c)))
 (assoc 'b '((a 999)(b 'b)(c 'c c)))
 (assoc 'c '((a 999)(b 'b)(c 'c c)))

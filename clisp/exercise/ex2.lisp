@@ -1,26 +1,50 @@
-(in-package :cl)
+;; chapter 24
+(in-package :cl-user)
 
 (defpackage :parse-binary
   (:nicknames "pb")
-  (:use :cl-user))
+  (:use :cl))
 
 (in-package :parse-binary)
 
+;; unsigned 16 bits interger
+(defun read-u2 (in)
+  (+ (* (read-byte in) 256) (read-byte in)))
+
+
+(code-char 97)
+(char-code #\a)
+(loop for c across "ID3"
+      do (print (char-code c)))
+
+(with-open-file (stream "~/repos/functional/clisp/exercise/test.txt"
+                        :direction :input
+                        :element-type '(unsigned-byte 8))
+  (when stream
+    (loop for line = (read-byte stream nil)
+          while line do (print (code-char line)))))
+
+;; reading bytes
+(with-open-file (stream "~/repos/functional/clisp/exercise/test.txt"
+                        :direction :input
+                        :element-type '(unsigned-byte 8))
+  (when stream
+    (with-output-to-string (s)
+      (loop for char = (read-byte stream nil)
+            while char do (write-char (code-char char) s)))))
+
+
+(let ((s "hell world"))
+  (loop for char across s
+        do (format t "~&~a" (char-code char))))
+;;do (write-byte (char-code char) *query-io*)))
 
 
 
+(format *standard-output* "helloworld!")
+(format *query-io* "helloworld!")
 
-
-
-
-
-
-
-
-
-
-
-
+====
 
 
 
@@ -47,36 +71,37 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 ;;https://web.stanford.edu/class/cs101/bits-bytes.html
-
-;;Each bit in the binary system has a position and a weight value assigned to it. Binary is a base-2 number system, therefore the weight of each bit is 2 raised to the power of the bit position.
-
-;;BYTE takes two arguments, the number of bits to extract (or set) and the position of the rightmost bit where the least significant bit is at position zero.
-(byte 2 0)
-00
-01
-10
-11
 ;;https://en.wikipedia.org/wiki/Bit_numbering
-1 => 1
-2 => 10
-3 => 11
-4 => 100
-5 => 101
 
-(byte 2 0)
-;;2^(0+2-1) to 2^0 =>2 to 1
-(format t "~a" (byte 2 0))
+(byte 2 0) ; it's a specification to tell ldb TO EXTRACT 2 bits, and from position 0(right most)
 
-(loop for i from 0 to 15 do
-  (format t "~&index: ~a, in byte: ~a" i (ldb (byte 2 0) i)))
+(let ((byte-size-var 3)
+      (byte-position-var 1))
+  (loop for i from 0 to 15
+        for emit-result = (ldb (byte byte-size-var byte-position-var) i)
+        do
+           (format t "~&I:~2,'0d. In B:~4,'0b. Result:~a. Result in B:~4,'0b"
+                   i i emit-result emit-result)))
 
-(loop for i from 0 to 15 do
-  (format t "~&index: ~a, in byte: ~a" i (ldb (byte 2 1) i)))
+;; inverse calc
+(ldb (byte 8 8) 255) ==>0
+(ldb (byte 8 8) 65408) ==>255, so how to get 65408?
 
-(byte-size (byte 2 0))
-(byte-position (byte 2 0))
+(setf x 0)
+(setf (ldb (byte 8 8) x) 65408)
 
-(code-char 65)
-(char-code #\a)
+
+
+(with-open-file (stream "~/repos/functional/clisp/exercise/test.txt"
+                        :direction :input)
+  (when stream
+    (let* ((f-length (file-length stream))
+           (result (make-string f-length))
+           (read-len (read-sequence result stream)))
+      (if (< read-len f-length) (subseq result 0 read-len) result))))
+
+(loop for i from 0 to 10
+      for j = (* i 3)
+      while (< j 29) do (print j)) ; once nil then terminate
+
