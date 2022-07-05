@@ -1,9 +1,11 @@
 ;;chapter 26
 (in-package :cl-user)
 
+(ql:quickload "aserve")
+
 (defpackage :book.web
   (:nicknames "web")
-  (:use :cl :net.aserve))
+  (:use :cl :net.aserve :net.html.generator))
 
 (in-package :book.web)
 
@@ -32,7 +34,7 @@
 
 (publish :path "/random-number" :function 'random-number)
 
-(net.html.generator:html
+(html
   (:head (:title "random"))
   (:body (:p "randome number: " (:princ-safe (random 1000)))))
 
@@ -49,7 +51,51 @@
 (publish :path "/show-query-params" :remove t)
 
 
+(defun simple-form (request entity)
+  (with-http-response (request entity :content-type "text/html")
+    (with-http-body (request entity)
+      (net.html.generator:html
+        (:html
+          (:head (:title "simple form"))
+          (:body
+           ((:form :method "post" :action "/show-query-result")
+            (:table
+             (:tr (:td "food")
+                  (:td ((:input :name "foo" :size 20))))
+             (:tr (:td "passowrd")
+                  (:td ((:input :name "password" :type "password" :size 20)))))
+            (:p ((:input :name "submit" :type "submit" :value "okay"))
+                ((:input :name "submit" :type "reset" :value "Rest"))))
+           ))))))
 
+(publish :path "/simple-form" :function 'simple-form)
 
+(defun show-query-result (request entity)
+  (with-http-response (request entity :content-type "text/html")
+    (with-http-body (request entity)
+      (html
+        (:html
+          (:body (:title "Query results")
+                 (if (request-query request)
+                     (progn
+                       (princ (request-query request))
+                       (loop for (k . v) in (request-query request)
+                             do (html
+                                  ((:table :border "1")
+                                   (:tr (:td (:princ-safe k)) (:td (:princ-safe v)))))))
+                     (html (:p "No query results")))))))))
+
+(publish :path "/show-query-result" :function 'show-query-result)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(html
+  ((:form :method "post" :action "/show-query-result")
+   (:table
+    (:tr (:td "food")
+         (:td ((:input :name "foo" :size 20))))
+    (:tr (:td "passowrd")
+         (:td ((:input :name "password" :type "password" :size 20)))))
+   (:p ((:input :name "submit" :type "submit" :value "okay"))
+       ((:input :name "submit" :type "reset" :value "Rest")))))
+
