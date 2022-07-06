@@ -50,7 +50,20 @@
 (publish :path "/show-query-params" :function 'random-number1)
 (publish :path "/show-query-params" :remove t)
 
+(defun random-number-2 (request entity)
+  (with-http-response (request entity :content-type "text/html")
+    (with-http-body (request entity)
+      (let* ((limit-string (or (request-query-value "limit" request) ""))
+             (limit (or (parse-integer limit-string :junk-allowed t) 10)))
+        (html
+          (:html
+            (:head (:title "random number page"))
+            (:body
+             (:p "range picked: "(:princ-safe limit))
+             (:p "randome number: " (:princ-safe (random limit))))))))))
 
+(publish :path "/show-random-number" :function 'random-number-2)
+==
 (defun simple-form (request entity)
   (with-http-response (request entity :content-type "text/html")
     (with-http-body (request entity)
@@ -87,6 +100,63 @@
 
 (publish :path "/show-query-result" :function 'show-query-result)
 
+
+(defun show-cookies (request entity)
+  (with-http-response (request entity :content-type "text/html")
+    (with-http-body (request entity)
+      (html
+        (:html
+          (:body
+           (:title "cookies")
+           (if (null (get-cookie-values request))
+               (html (:p "No cookies"))
+               (progn (princ (get-cookie-values request))
+                      (html
+                        ((:table :border 1)
+                         (loop for (k . v) in (get-cookie-values request)
+                               do (html (:tr (:td (:princ-safe k)) (:td (:princ-safe v)))))))))))))))
+
+(publish :path "/show-cookies" :function 'show-cookies)
+
+(defun set-cookies (request entity)
+  (with-http-response (request entity :content-type "text/html")
+    (set-cookie-header request :name "my cookie" :value "a cookie value")
+    (with-http-body (request entity)
+      (html
+        (:html (:body (:title "cookies set")
+                      (:p "cookie set")
+                      (:p ((:a :href "/show-cookies") "look at the cookies"))))))))
+(publish :path "/set-cookies" :function 'set-cookies)
+
+
+(html
+  (:html (:body (:title "cookies set")
+                (:p "cookie set")
+                (:p ((:a :href "/show-cookies") "look at the cookies")))))
+
+(defmacro defun-url-function (name)
+  (let ((entity (gensym)))
+    `(progn
+       (defun ,name (request ,entity)
+         (with-http-response (request ,entity :content-type "text/html")
+           (set-cookie-header request :name ,(format nil "/~(~a~)" name)
+                                      :value ,(format nil "/~(~a~)" name))
+           (with-http-body (request ,entity)
+             (html
+               (:html (:body (:title "this is my page")
+                             (:p "fine")))))))
+       (publish :path ,(format nil "/~(~a~)" name) :function ',name))))
+
+(defmacro defun-url-function2 (name))
+
+(let ((param (list 'a 'b)))
+  (etypecase param
+    (list param)
+    (symbol `(,param string nil nil))))
+
+(defun-url-function test1)
+(macroexpand-1 '(defun-url-function test1))
+==
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (html
