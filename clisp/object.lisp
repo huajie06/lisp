@@ -1,7 +1,6 @@
 ;;; https://lispcookbook.github.io/cl-cookbook/clos.html
 ;;; a better reference
 
-
 (defclass bank-account-1 ()
   ((customer-name
     :initarg :customer-name
@@ -16,11 +15,57 @@
 
 (defparameter *account-1*
   (make-instance 'bank-account-1
-		 :customer-name "qu ni ma de"
+		 :customer-name "Name qu ni ma de"
 		 :balance-amountxxx -100
 		 :age 99))
 
 ;;(balance-amount *account-1*)
+
+(with-accessors ((va1 customer-name)
+		 (age agexxx)) *account-1*
+  (format t "name: ~a. age:~a" va1 age))
+
+;;=====================
+(defgeneric print-something (var type)
+  (:documentation "something stupid for different types"))
+
+(defmethod print-something (var (type (eql 'string)))
+  (format t "the var type is string, value is ~a" var))
+
+(defmethod print-something (var (type (eql 'number)))
+  (format t "the var type is number, value is ~a" var))
+
+(print-something "hello" 'string)
+(print-something 999 'number)
+(print-something 999 'string)
+;;=====================
+
+(defgeneric print-object-cust (obj)
+  (:documentation "customize print function"))
+
+(defmethod print-object-cust ((obj bank-account-1))
+  (with-slots (customer-age customer-name balance-amount) obj
+    (loop repeat 5 do
+      (format t "~&age:~a, name:~a, balance:~a" customer-age customer-name balance-amount))))
+
+(print-object-cust *account-1*)
+
+
+(defgeneric deposit (obj &key amount)
+  (:documentation "deposit some amount"))
+
+(defmethod deposit ((obj bank-account-1) &key (amount 0))
+  (with-slots (balance-amount) obj
+    (incf balance-amount amount)))
+
+
+(print-object-cust *account-1*)
+(deposit *account-1* :amount 100)
+(print-object-cust *account-1*)
+
+;; (defun sss (a &key (b 0))
+;;   (+ a b))
+;; (sss 1 :b 2)
 
 (customer-name *account-1*)
 (agexxx *account-1*)
@@ -185,7 +230,7 @@ p1
 
 (with-slots ((n name)
              (l lisper))
-    p1 
+    p1
   (format t "got ~a, ~a~&" n l))
 
 (defmethod greet (obj)
@@ -227,8 +272,6 @@ p4
     :initarg :a
     :initform (error "you didn't supply an initial value for slot a"))))
 
-(make-instance 'foo :a 'whatheheck) 
+(make-instance 'foo :a 'whatheheck)
 
 (slot-value (make-instance 'foo :a 'wahtdkf) 'a)
-
-
