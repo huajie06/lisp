@@ -145,7 +145,88 @@
 
 *customer-table*
 (rows *customer-table*)
-=======
+
+;;==============================
+(elt (rows *customer-table*) 0)
+
+(loop for i across (rows *customer-table*)
+      do (remove-if-not
+	  #'(lambda (x) (equal (getf x :first-name) "mike")) i))
+
+(remove-if-not #'(lambda (x) (equal (getf x :first-name)) "mike")
+	       '((:first-name "z")))
+
+
+;; equal
+(remove-if-not #'(lambda (x) (equal (get-col-value x :first-name) "mike"))
+	       (rows *customer-table*))
+
+;; select
+(defun get-col-value (row column-name)
+  (getf row column-name))
+
+;; useful loop
+(defmacro loop-rows ((row table) &body body)
+  `(loop for ,row across (rows ,table) do ,@body))
+
+(loop-rows (r *customer-table*)
+  (print (get-col-value r :city)))
+
+(loop-rows (r *customer-table*)
+  (let ((fname (get-col-value r :first-name))
+	(lname (get-col-value r :last-name))
+	(city (get-col-value r :city)))
+    (format t "fname:~a, last name:~a, city:~a~%" fname lname city)))
+
+(loop-rows (r *customer-table*)
+  (with-column-value1 (first-name last-name) r
+    (format t "first name: ~a. last name: ~a~%" first-name last-name)))
+
+
+
+;;==================================================
+;; ============ two different ways to `with`
+;;==================================================
+(defun as-keywords (symbol)
+  (intern (symbol-name symbol) :keyword))
+(defun column-bindings (vars row)
+  (loop for v in vars collect `(,v (get-col-value ,row ,(as-keywords v)))))
+
+(column-bindings '(first-name last-name)
+		 (elt (rows *customer-table*) 1))
+
+`(let ,(column-bindings '(first-name last-name)
+			(elt (rows *customer-table*) 1))
+   (print (list first-name last-name)))
+
+
+(defmacro test-with-1 ((&rest vars) row &body body)
+  `(let ,(loop for v in vars collect `(,v (get-col-value ,row ,(as-keywords v))))
+     ,@body))
+
+(test-with-1 (first-name last-name) (elt (rows *customer-table*) 1)
+  (print (list first-name last-name)))
+
+;;============
+(defmacro with-column-value1 ((&rest vars) row &body body)
+  `(let* ((col-val ',(loop for i in vars collect (as-keywords i)))
+	  (r-val (loop for i in col-val collect (get-col-value ,row i))))
+     (destructuring-bind (first-name last-name) r-val
+       ,@body)))
+
+(macroexpand-1 '(with-column-value1 (first-name last-name)
+		 (elt (rows *customer-table*) 1)
+		 (print (list first-name last-name))))
+
+(with-column-value1 (first-name last-name)
+		    (elt (rows *customer-table*) 1)
+  (print (list first-name last-name)))
+;;==================================================
+;; ============ two different ways to `with` end
+;;==================================================
+
+
+
 
 (defparameter *test-table* (make-instance 'table :cols *cols-specs*))
 
@@ -194,7 +275,9 @@
 
 
 
-;;====================
+;;============================================================
+;;=========== some testing code
+;;============================================================
 (name (make-instance 'cols :name :hahaha :default-value 999))
 (default-value (make-instance 'cols :name :hahaha :default-value 999))
 
@@ -209,3 +292,27 @@
 ;;(inspect *cols-specs*)
 
 ;;====================
+
+
+;;============================================================
+;;=========== play with macro.
+;;======== the comma(,) in front of a breaket
+;;======== will result in every single form has a (,), so cannot double it.
+;;============================================================
+(defmacro with-column-value1 ((&rest vars) row &body body)
+  `(let* ((col-val ',(loop for i in vars collect (as-keywords i)))
+	  (r-val (loop for i in col-val collect (get-col-value ,row i))))
+     (destructuring-bind (first-name last-name) r-val
+       ,@body)))
+
+(macroexpand-1 '(with-column-value1 (first-name last-name)
+		 (elt (rows *customer-table*) 1)
+		 (print (list first-name last-name))))
+
+(with-column-value1 (first-name last-name)
+		    (elt (rows *customer-table*) 1)
+  (print (list first-name last-name)))
+
+;;============================================================
+;;=========== play with macro end
+;;============================================================
