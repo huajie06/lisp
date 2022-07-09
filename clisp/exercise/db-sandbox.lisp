@@ -23,7 +23,7 @@
 (defmethod print-object ((obj table) stream)
   (print-unreadable-object (obj stream)
     (with-accessors ((rows rows) (cols cols)) obj
-      (format stream "rows:~a. cols:~b" rows cols))))
+      (format stream "rows:~a.~%cols:~b" rows cols))))
 
 (defclass cols ()
   ((name
@@ -62,7 +62,6 @@
 
 (vector-push-extend *test-row* (rows *test-table*))
 
-
 (defparameter *test-array* (make-array 10 :adjustable t :fill-pointer 0))
 (vector-push 'a *test-array*)
 *test-array*
@@ -70,4 +69,5 @@
 (loop for v across (rows *test-table*)
       do (print (getf v :first-name)))
 
-
+(loop for v in (cols *test-table*)
+      do (print (name v)))
