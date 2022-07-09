@@ -24,7 +24,9 @@
 (defmethod print-object ((obj table) stream)
   (print-unreadable-object (obj stream)
     (with-accessors ((row-cnt rows) (schema-val schema)) obj
-      (format stream "~&rows:~a, schema:~a" row-cnt schema-val))))
+      (format stream "~&rows:~a.~%schema:~a"
+	      (length row-cnt)
+	      (loop for s in schema-val collect (name s))))))
 ;; ============= print object end ===============
 
 (defparameter *default-table-size* 100)
@@ -131,8 +133,8 @@
  (list
   :file   "file1"
   :genre  "pop"
-  :artist "jay"
-  :album  "new"
+  :artist "jay4"
+  :album  "new2"
   :song   "songs"
   :track  12
   :year   2020
@@ -142,7 +144,9 @@
 (type-of *mp3s*)
 (rows *mp3s*)
 (schema *mp3s*)
+(format t "~a" *mp3s*)
 
+*mp3s*
 
 (defun view-db (db)
   (let ((col-name (loop for s in (schema db) collect (name s)))
