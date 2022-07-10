@@ -26,7 +26,7 @@
 (defmethod print-object ((obj table) stream)
   (print-unreadable-object (obj stream)
     (with-accessors ((rows rows) (col-specs cols-spec)) obj
-      (format stream "Columns Specification:~&~a~%Rows:~a" col-specs rows))))
+      (format stream "Columns Specification:~&~a~%Rows:~&~a~%" col-specs rows))))
 
 (defclass col ()
   ((name
@@ -178,12 +178,55 @@
 	(city (get-col-value r :city)))
     (format t "fname:~a, last name:~a, city:~a~%" fname lname city)))
 
+(defmacro with-column-value ((&rest vars) row &body body)
+  `(let* ((col-val ',(loop for i in vars collect (as-keywords i)))
+	  (r-val (loop for i in col-val collect (get-col-value ,row i))))
+     (destructuring-bind (first-name last-name) r-val
+       ,@body)))
+
 (loop-rows (r *customer-table*)
-  (with-column-value1 (first-name last-name) r
+  (with-column-value (first-name last-name) r
     (format t "first name: ~a. last name: ~a~%" first-name last-name)))
 
 
+;;======
 
+(defun extract-col-specs (column-name cols-spec)
+  (let* ((v (gensym))
+	 (v column-name)
+	 (v (if (listp v) v (list v))))
+    (remove-if-not
+     #'(lambda (col) (member (name col) v))
+     cols-spec)))
+
+(extract-col-specs '(:first-name :last-name) (cols-spec *customer-table*))
+(extract-col-specs :first-name (cols-spec *customer-table*))
+
+
+(defun extractor (schema)
+  (let ((names (mapcar #'name schema)))
+    #'(lambda (row)
+        (loop for c in names collect c collect (getf row c)))))
+
+(defun extract-col (cols-spec rows)
+  (map 'vector (extractor cols-spec) rows))
+
+*customer-table*
+
+(defun select (&key columns from)
+  (let ((rows (rows from))
+	(cols-spec (cols-spec from)))
+
+    (when columns
+      (setf cols-spec (extract-col-specs columns cols-spec))
+      (setf rows (extract-col cols-spec rows)))
+
+    (make-instance 'table :rows rows :cols-spec cols-spec)))
+
+(select :columns '(:first-name :last-name :city :country)
+	:from *customer-table* )
+
+==
 ;;==================================================
 ;; ============ two different ways to `with`
 ;;==================================================
@@ -192,23 +235,17 @@
 (defun column-bindings (vars row)
   (loop for v in vars collect `(,v (get-col-value ,row ,(as-keywords v)))))
 
-(column-bindings '(first-name last-name)
-		 (elt (rows *customer-table*) 1))
-
-`(let ,(column-bindings '(first-name last-name)
-			(elt (rows *customer-table*) 1))
-   (print (list first-name last-name)))
-
-
+;; basically is var1, var2, var3 ... inside of let
 (defmacro test-with-1 ((&rest vars) row &body body)
-  `(let ,(loop for v in vars collect `(,v (get-col-value ,row ,(as-keywords v))))
+  `(let ,(loop for v in vars collect
+	       `(,v (get-col-value ,row ,(as-keywords v))))
      ,@body))
 
 (test-with-1 (first-name last-name) (elt (rows *customer-table*) 1)
   (print (list first-name last-name)))
 
 ;;============
-(defmacro with-column-value1 ((&rest vars) row &body body)
+(defmacro with-column-value ((&rest vars) row &body body)
   `(let* ((col-val ',(loop for i in vars collect (as-keywords i)))
 	  (r-val (loop for i in col-val collect (get-col-value ,row i))))
      (destructuring-bind (first-name last-name) r-val
@@ -316,3 +353,22 @@
 ;;============================================================
 ;;=========== play with macro end
 ;;============================================================
+
+
+(defun extract-col (cols-spec rows)
+  (map 'vector (extractor cols-spec) rows))
+
+(map 'vector (extractor
+	      (extract-col-specs '(:first-name :last-name) (cols-spec *customer-table*)))
+     (rows *customer-table*))
+
+(mapcar #'name (cols-spec *customer-table*))
+
+(defun extractor (schema)
+  (let ((names (mapcar #'name schema)))
+    #'(lambda (row)
+        (loop for c in names collect c collect (getf row c)))))
+
+(let ((row (elt (rows *customer-table*) 0))
+      (names (list :first-name :last-name)))
+  (loop for c in names collect c collect (getf row c)))
