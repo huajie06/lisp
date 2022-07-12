@@ -192,16 +192,13 @@
 ;;======
 
 (defun extract-col-specs (column-name cols-spec)
-  (let* ((v (gensym))
-	 (v column-name)
-	 (v (if (listp v) v (list v))))
+  (let ((v (if (listp column-name) column-name (list column-name))))
     (remove-if-not
      #'(lambda (col) (member (name col) v))
      cols-spec)))
 
 (extract-col-specs '(:first-name :last-name) (cols-spec *customer-table*))
 (extract-col-specs :first-name (cols-spec *customer-table*))
-
 
 (defun extractor (schema)
   (let ((names (mapcar #'name schema)))
@@ -225,6 +222,24 @@
 
 (select :columns '(:first-name :last-name :city :country)
 	:from *customer-table* )
+
+
+
+
+(let ((keys '(:first-name :last-name)))
+  (loop for k in keys
+	collect k collect
+		  (getf (elt (rows *customer-table*) 1) k)))
+
+(defun fn ()
+  (let ((keys '(:first-name :last-name)))
+    #'(lambda (r) ;why #' here
+	(loop for k in keys collect k collect
+				      (getf r k)))))
+
+(map 'vector #'(lambda (x)(getf x :first-name)) (rows *customer-table*))
+(map 'vector fn (rows *customer-table*))
+
 
 ==
 ;;==================================================
