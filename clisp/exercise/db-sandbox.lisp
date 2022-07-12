@@ -178,6 +178,9 @@
 	(city (get-col-value r :city)))
     (format t "fname:~a, last name:~a, city:~a~%" fname lname city)))
 
+(defun as-keywords (symbol)
+  (intern (symbol-name symbol) :keyword))
+
 (defmacro with-column-value ((&rest vars) row &body body)
   `(let* ((col-val ',(loop for i in vars collect (as-keywords i)))
 	  (r-val (loop for i in col-val collect (get-col-value ,row i))))
@@ -210,7 +213,7 @@
 
 *customer-table*
 
-(defun select (&key columns from)
+(defun select (&key columns from sort-by)
   (let ((rows (rows from))
 	(cols-spec (cols-spec from)))
 
@@ -218,14 +221,28 @@
       (setf cols-spec (extract-col-specs columns cols-spec))
       (setf rows (extract-col cols-spec rows)))
 
+    (when sort-by
+      (setf rows ))
     (make-instance 'table :rows rows :cols-spec cols-spec)))
 
 (select :columns '(:first-name :last-name :city :country)
 	:from *customer-table* )
 
+;; ============
+
+(defparameter *col-t*
+  (extract-col-specs '(:first-name :last-name :city)
+		     (cols-spec *customer-table*)))
+*col-t*
+(extract-col *col-t* (rows *customer-table*))
+
+
+(sort '(9 4 2 3 4) #'<)
+(sort (copy-seq (rows *customer-table*)) )
 
 
 
+==
 (let ((keys '(:first-name :last-name)))
   (loop for k in keys
 	collect k collect
@@ -370,6 +387,8 @@
 ;;============================================================
 
 
+
+;; ===== create lambda to help filter
 (defun extract-col (cols-spec rows)
   (map 'vector (extractor cols-spec) rows))
 
@@ -387,3 +406,29 @@
 (let ((row (elt (rows *customer-table*) 0))
       (names (list :first-name :last-name)))
   (loop for c in names collect c collect (getf row c)))
+
+
+
+;; === sort list of list
+(defparameter *test-sort-l*
+  #((:FIRST-NAME "0 mike" :LAST-NAME "z" :CITY "nyc")
+    (:FIRST-NAME "1 jack" :LAST-NAME "z" :CITY "sfo")
+    (:FIRST-NAME "2 kate" :LAST-NAME "c" :CITY "bos")
+    (:FIRST-NAME "3 lucy" :LAST-NAME "d" :CITY "ord")))
+
+*test-sort-l*
+
+
+(sort (copy-seq *test-sort-l*)
+      #'string> :key #'(lambda (l) (getf l :last-name)))
+
+(sort (copy-seq *test-sort-l*)
+      #'string< :key #'(lambda (l) (getf l :first-name)))
+
+
+(defun comparator-fn (vars)
+  (let ((names (if (listp vars) vars (list vars))))
+    (loop for i in names
+	  do (print i))))
+
+(comparator-fn (list :first-name :last-name))

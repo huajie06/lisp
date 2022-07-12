@@ -229,6 +229,14 @@
 (sort (vector "a" "c" "baz") #'string>)
 ;;(sort (vector "a" "c" "baz") #'char>)
 
+(setq tester (list 1 2 3 4 5 6 7 8 9 0)) =>  (1 2 3 4 5 6 7 8 9 0)
+(stable-sort tester #'(lambda (x y) (and (oddp x) (> y 3))))
+(stable-sort tester #'>)
+
+
+
+
+
 (merge 'list '(1 3 5) '(2 4 6) #'<)
 (merge 'vector #("ab" "b") #("a" "z") #'string<)
 
