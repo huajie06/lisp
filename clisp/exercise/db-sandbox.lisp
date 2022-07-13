@@ -225,8 +225,6 @@
 		when (string> val-1 val-2) return nil
 		  finally (return nil)))))
 
-
-
 *customer-table*
 
 (defun select (&key columns from (sort-by nil) (distinct nil))
@@ -234,7 +232,7 @@
 	(cols-spec (cols-spec from)))
 
     (when columns
-      (setf cols-spec (extract-col-specs columns cols-spec))
+      (setf cols-spec (extract-col-specs (makelist columns) cols-spec))
       (setf rows (extract-col cols-spec rows)))
 
     (when distinct
@@ -257,7 +255,9 @@
 	:from *customer-table* :distinct nil)
 
 
-;; ============
+;; ============================================
+;; ============ some testing code
+;; ============================================
 
 (defparameter *col-t*
   (extract-col-specs '(:first-name :last-name :city)
@@ -270,8 +270,6 @@
 (sort (copy-seq (rows *customer-table*)) )
 
 
-
-==
 (let ((keys '(:first-name :last-name)))
   (loop for k in keys
 	collect k collect
@@ -285,7 +283,6 @@
 
 (map 'vector #'(lambda (x)(getf x :first-name)) (rows *customer-table*))
 (map 'vector fn (rows *customer-table*))
-
 
 ==
 ;;==================================================
@@ -374,7 +371,7 @@
 
 
 ;;============================================================
-;;=========== some testing code
+;;=========== some additional testing code
 ;;============================================================
 (name (make-instance 'cols :name :hahaha :default-value 999))
 (default-value (make-instance 'cols :name :hahaha :default-value 999))

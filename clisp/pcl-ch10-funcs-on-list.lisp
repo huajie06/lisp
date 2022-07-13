@@ -112,6 +112,28 @@
 ==
 
 
+(loop repeat 10
+      for x = (random 1000)
+      maximizing x into biggest
+      minimizing x into smallest
+      summing x into total
+      collecting x into xs
+      ;;when (> x 500) return nil
+      finally (return (values biggest smallest total xs)))
+(loop for n from 1 to 10
+      when (evenp n) collect n into evens
+	else collect n into odds
+      finally (return (values evens odds)))
+
+(loop repeat 5
+      for x = (random 10)
+      collect x
+      finally (return nil))
+
+(loop repeat 5
+      for x = (random 10)
+      collect x)
+
 
 
 
@@ -232,10 +254,36 @@
 (setq tester (list 1 2 3 4 5 6 7 8 9 0)) =>  (1 2 3 4 5 6 7 8 9 0)
 (stable-sort tester #'(lambda (x y) (and (oddp x) (> y 3))))
 (stable-sort tester #'>)
+;; say want to sort list of list
+(defparameter *test-list
+  '((:a 99 :b "a" :c 3)
+    (:a 0 :b "b" :c 3)
+    (:a 0 :b "c" :c 3)))
 
+(let ((names '(:c :b :b))
+      (la '(:a 99 :b 1 :c 3))
+      (lb '(:a 0 :b 2 :c 3)))
+  (loop for n in names
+	for val-a = (getf la :a)
+	for val-b = (getf lb :b)
+	do
+	   (print (list n val-a val-b))
+	when (> val-a val-b) return t
+	  when (< val-a val-b) return nil
+	    finally (return nil)))
 
-
-
+(defun sort-fn (vars)
+  (let ((var vars))
+    #'(lambda (a b)
+	(loop for i in var
+	      for val-a = (getf a i)
+	      for val-b = (getf b i)
+	      when (< val-a val-b) return t
+		when (> val-a val-b) return nil
+		  finally (return nil)))))
+;;(sort-fn (list :a :b))
+(sort *test-list (sort-fn (list :a :c)))
+==
 
 (merge 'list '(1 3 5) '(2 4 6) #'<)
 (merge 'vector #("ab" "b") #("a" "z") #'string<)
