@@ -211,9 +211,25 @@
 (defun extract-col (cols-spec rows)
   (map 'vector (extractor cols-spec) rows))
 
+
+(defun makelist (thing)
+  (if (listp thing) thing (list thing)))
+
+(defun sort-by-columns (name-list)
+  (let ((names (makelist name-list)))
+    #'(lambda (a b)
+	(loop for n in names
+	      for val-1 = (getf a n)
+	      for val-2 = (getf b n)
+	      when (string< val-1 val-2) return t
+		when (string> val-1 val-2) return nil
+		  finally (return nil)))))
+
+
+
 *customer-table*
 
-(defun select (&key columns from sort-by)
+(defun select (&key columns from (sort-by nil) (distinct nil))
   (let ((rows (rows from))
 	(cols-spec (cols-spec from)))
 
@@ -221,12 +237,25 @@
       (setf cols-spec (extract-col-specs columns cols-spec))
       (setf rows (extract-col cols-spec rows)))
 
+    (when distinct
+      (setf rows (remove-duplicates rows :test #'equal)))
+
     (when sort-by
-      (setf rows ))
+      (setf rows (sort (copy-seq rows) (sort-by-columns sort-by))))
+
     (make-instance 'table :rows rows :cols-spec cols-spec)))
 
 (select :columns '(:first-name :last-name :city :country)
-	:from *customer-table* )
+	:from *customer-table* :sort-by :last-name :distinct t)
+(select :columns '(:first-name :last-name :city :country)
+	:from *customer-table*)
+
+(select :columns '(:first-name :last-name :city :country)
+	:from *customer-table* :sort-by '(:first-name :last-name))
+
+(select :columns '(:first-name :last-name :city :country)
+	:from *customer-table* :distinct nil)
+
 
 ;; ============
 
@@ -415,8 +444,36 @@
     (:FIRST-NAME "1 jack" :LAST-NAME "z" :CITY "sfo")
     (:FIRST-NAME "2 kate" :LAST-NAME "c" :CITY "bos")
     (:FIRST-NAME "3 lucy" :LAST-NAME "d" :CITY "ord")))
+(defparameter *test-sort-l2*
+  #((:FIRST-NAME "0 mike" :LAST-NAME "z" :CITY "nyc")
+    (:FIRST-NAME "1 mike" :LAST-NAME "z" :CITY "nyc")
+    (:FIRST-NAME "0 mike" :LAST-NAME "z" :CITY "nyc")))
 
-*test-sort-l*
+(defun makelist (thing)
+  (if (listp thing) thing (list thing)))
+
+(makelist '(1 2 3))
+(makelist 1)
+
+==
+(defun sort-pred (name-list)
+  (let ((names (makelist name-list)))
+    #'(lambda (a b)
+	(loop for n in names
+	      for val-1 = (getf a n)
+	      for val-2 = (getf b n)
+	      when (string< val-1 val-2) return t
+		when (string> val-1 val-2) return nil
+		  finally (return nil)))))
+
+(sort-pred (list :first-name :last-name))
+
+(funcall (sort-pred (list :first-name :last-name))
+	 '(:FIRST-NAME "2 mike" :LAST-NAME "z" :CITY "nyc")
+	 '(:FIRST-NAME "1 mike" :LAST-NAME "z" :CITY "nyc"))
+
+(sort *test-sort-l* (sort-pred (list :last-name :first-name)))
+(sort *test-sort-l* (sort-pred :first-name))
 
 
 (sort (copy-seq *test-sort-l*)
