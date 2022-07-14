@@ -147,20 +147,6 @@
 (rows *customer-table*)
 
 ;;==============================
-(elt (rows *customer-table*) 0)
-
-(loop for i across (rows *customer-table*)
-      do (remove-if-not
-	  #'(lambda (x) (equal (getf x :first-name) "mike")) i))
-
-(remove-if-not #'(lambda (x) (equal (getf x :first-name)) "mike")
-	       '((:first-name "z")))
-
-
-;; equal
-(remove-if-not #'(lambda (x) (equal (get-col-value x :first-name) "mike"))
-	       (rows *customer-table*))
-
 ;; select
 (defun get-col-value (row column-name)
   (getf row column-name))
@@ -192,7 +178,6 @@
     (format t "first name: ~a. last name: ~a~%" first-name last-name)))
 
 
-;;======
 
 (defun extract-col-specs (column-name cols-spec)
   (let ((v (if (listp column-name) column-name (list column-name))))
@@ -225,15 +210,25 @@
 		when (string> val-1 val-2) return nil
 		  finally (return nil)))))
 
+(defun filter-rows (column-and-value)
+  #'(lambda (row)
+      (every #'(lambda (x) (equal x t))
+	     (loop for (column value) on column-and-value by #'cddr
+		   collect (string= (getf row column) value)))))
+
 *customer-table*
 
-(defun select (&key columns from (sort-by nil) (distinct nil))
+(defun select (&key columns from where sort-by distinct)
   (let ((rows (rows from))
 	(cols-spec (cols-spec from)))
 
     (when columns
       (setf cols-spec (extract-col-specs (makelist columns) cols-spec))
       (setf rows (extract-col cols-spec rows)))
+
+    (when where
+      (print where)
+      (setf rows (remove-if-not (filter-rows where) rows)))
 
     (when distinct
       (setf rows (remove-duplicates rows :test #'equal)))
@@ -243,10 +238,21 @@
 
     (make-instance 'table :rows rows :cols-spec cols-spec)))
 
+(select :from *customer-table*)
+(select :from *customer-table*
+	:where '(:city "sfo" :last-name "z"))
+
 (select :columns '(:first-name :last-name :city :country)
 	:from *customer-table* :sort-by :last-name :distinct t)
+
 (select :columns '(:first-name :last-name :city :country)
 	:from *customer-table*)
+
+(select :columns '(:first-name :last-name :city :country)
+	:from *customer-table*
+	:where '(:first-name "mike" :last-name g))
+
+
 
 (select :columns '(:first-name :last-name :city :country)
 	:from *customer-table* :sort-by '(:first-name :last-name))
@@ -254,7 +260,47 @@
 (select :columns '(:first-name :last-name :city :country)
 	:from *customer-table* :distinct nil)
 
+(rows *customer-table*)
+(cols-spec *customer-table*)
 
+;; :first-name "mike" :last-name "j"
+
+(elt (rows *customer-table*) 1)
+
+(defun filter-rows1 (row &rest column-and-value)
+  (loop for (column value) on (car column-and-value) by #'cddr
+	collect (string= (getf row column) value)))
+
+(filter-rows1 (elt (rows *customer-table*) 1)
+	      '(:first-name "jack" :last-name "z"))
+
+(defun filter-rows (&rest column-and-value)
+  #'(lambda (row)
+      (every #'(lambda (x) (equal x t))
+	     (loop for (column value) on column-and-value by #'cddr
+		   collect (string= (getf row column) value)))))
+
+
+(remove-if-not #'(lambda (x) (string= (getf x :first-name) "mike"))
+	       (rows *customer-table*))
+
+(funcall (filter-rows '(:first-name "mike" :last-name "g"))
+	 (elt (rows *customer-table*) 0))
+
+(remove-if-not (filter-rows '(:first-name "jack" :age nil))
+	       (rows *customer-table*))
+
+(defun test-fun (&rest rest)
+  (print rest))
+(test-fun 1 2 3 'd)
+(test-fun '(1 2 3 'd))
+
+
+(defun test-fun1 (&optional rest)
+  (print rest))
+(test-fun1 '(1 2 3 4))
+
+==
 ;; ============================================
 ;; ============ some testing code
 ;; ============================================
@@ -385,6 +431,21 @@
 (apply #'create-one-col '(:state "ct"))
 
 ;;(inspect *cols-specs*)
+
+(elt (rows *customer-table*) 0)
+
+(loop for i across (rows *customer-table*)
+      do (remove-if-not
+	  #'(lambda (x) (equal (getf x :first-name) "mike")) i))
+
+(remove-if-not #'(lambda (x) (equal (getf x :first-name)) "mike")
+	       '((:first-name "z")))
+
+
+;; equal
+(remove-if-not #'(lambda (x) (equal (get-col-value x :first-name) "mike"))
+	       (rows *customer-table*))
+
 
 ;;====================
 
