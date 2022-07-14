@@ -109,9 +109,25 @@
 
 (loop for i from 1 to 3
       collect i collect (* 2 i) collect i)
+;; ====
+(loop for i in '(1 2 3 4) by #'cddr
+      do (print i))
+(cddr '(1 2 3 4))
+
+(loop for (a b) on '(1 2 3 4) by #'cddr
+      do (print (list a b)))
+
+(loop for i in '(t nil t)
+      always #'(lambda (x) (eql x t) i))
+
+(loop for i in '(1 2 3 nil 1)
+      always (evenp i))
+
+(every #'(lambda (x) (eql x t)) '(t t t))
+
+
 ==
-
-
+;; ====
 (loop repeat 10
       for x = (random 1000)
       maximizing x into biggest
