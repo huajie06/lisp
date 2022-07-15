@@ -117,13 +117,37 @@
 (loop for (a b) on '(1 2 3 4) by #'cddr
       do (print (list a b)))
 
-(loop for i in '(t nil t)
-      always #'(lambda (x) (eql x t) i))
+(loop for (a b) on '(:first-name ("jack" "mike" "new")) by #'cddr
+      do (format t "a:~a~%b:~b" a b))
+
+(loop for (a b) on '(:first-name "jack" "mike" "new") by #'cddr
+      do (format t "a:~a~% b:~b" a b))
+
+(loop for i downfrom 10 to 1
+      do (print i))
+
+(loop for i downfrom 10 to 1
+	thereis (> i 5))
+
+(loop for i downfrom 10 to 1
+      never (> i 10))
+
+(loop for i in '(t t t)
+      always (eq i t))
+
+(loop for i in '(t 4 t)
+	thereis (eq i t))
 
 (loop for i in '(1 2 3 nil 1)
       always (evenp i))
 
+(loop for i from 2 to 100
+      always (> i 1))
+
 (every #'(lambda (x) (eql x t)) '(t t t))
+
+(loop for ch across "foobar"
+      always (eq ch #\a))
 
 
 ==
@@ -151,13 +175,14 @@
       collect x)
 
 
+(list 1 b c) ; this will give B unbound error
+'(1 b c) ; but this will work fine
+'(print 'a)
+(eval '(print 'a))
+(eval '(print a)) ; a is unbound
 
-
-
-
-
-
-
+(loop for i in '(1 b c) ; this works
+      do (print i))
 
 
 
@@ -311,6 +336,9 @@
 
 (position #\b "foobarbaz") ; search for a single item
 (search "bar" "foobarbaz") ; search for a sequence
+
+(member "jack" '("jack" "mike") :test #'string=)
+(member 3 '(1 2 3) :test #'=)
 
 (every #'evenp #(1 2 3 4 5))    ==> NIL
 (some #'evenp #(1 2 3 4 5))     ==> T
