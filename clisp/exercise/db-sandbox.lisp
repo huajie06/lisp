@@ -216,9 +216,14 @@
 	     (loop for (column value) on column-and-value by #'cddr
 		   collect (string= (getf row column) value)))))
 
+(defun in-rows (rest)
+  #'(lambda (row)
+      (loop for (k v) on rest by #'cddr
+	    always (if (member (getf row k) v :test #'string=) t nil))))
+
 *customer-table*
 
-(defun select (&key columns from where sort-by distinct)
+(defun select (&key columns from where in sort-by distinct)
   (let ((rows (rows from))
 	(cols-spec (cols-spec from)))
 
@@ -227,8 +232,11 @@
       (setf rows (extract-col cols-spec rows)))
 
     (when where
-      (print where)
       (setf rows (remove-if-not (filter-rows where) rows)))
+
+    (when in
+      (print (remove-if-not (in-rows in) (rows *customer-table*)))
+      (setf rows (remove-if-not (in-rows in) rows)))
 
     (when distinct
       (setf rows (remove-duplicates rows :test #'equal)))
@@ -240,6 +248,9 @@
 
 (select :from *customer-table*)
 (select :from *customer-table*
+	:in '(:first-name ("mike" "jack" "lucy")))
+
+(select :from *customer-table*
 	:where '(:city "sfo" :last-name "z"))
 
 (select :columns '(:first-name :last-name :city :country)
@@ -250,9 +261,7 @@
 
 (select :columns '(:first-name :last-name :city :country)
 	:from *customer-table*
-	:where '(:first-name "mike" :last-name g))
-
-
+	:where '(:first-name "mike" :last-name "g"))
 
 (select :columns '(:first-name :last-name :city :country)
 	:from *customer-table* :sort-by '(:first-name :last-name))
@@ -289,6 +298,46 @@
 
 (remove-if-not (filter-rows '(:first-name "jack" :age nil))
 	       (rows *customer-table*))
+
+'(:first-name "jack" "mike")
+(defun in (row &rest rest)
+  (loop for (k v) on rest by #'cddr
+	collect (if (member (getf row k) v :test #'string=) t nil)))
+
+(defun in (&rest rest)
+  (print rest)
+  #'(lambda (row)
+      (loop for (k v) on rest by #'cddr
+	    always (if (member (getf row k) v :test #'string=) t nil))))
+
+(defun in2 (row rest)
+  (loop for (k v) on rest by #'cddr
+	;; do (print (getf row k))
+	;;    (format t "~&v:~a" v)
+	;;    (format t "~&v:~a" '("a" "B"))
+	;;    (print (member (getf row k) v :test #'string=))
+	;;(print (member (getf row k) (list v) :test #'string=))
+	always (if (member (getf row k) v :test #'string=) t nil)))
+
+
+;;(elt (rows *customer-table*) 1)
+(in2 (elt (rows *customer-table*) 1)
+     '(:first-name ("jack" "mike" "new")))
+==
+;; (in :first-name '("jack" "mike" "new"))
+;; (remove-if-not (in :first-name '("jack" "mike" "new")) (rows *customer-table*))
+
+(remove-if-not (in '(:first-name "jack" "mike" "new")) (rows *customer-table*))
+
+==
+;; if in this format
+;;(elt (rows *customer-table*) 1)
+(in (elt (rows *customer-table*) 1)
+    :first-name '("jack" "mike" "new"))
+
+==
+(in (elt (rows *customer-table*) 1)
+    :first-name '("jack" "mike") :last-name '("g" "z"))
 
 (defun test-fun (&rest rest)
   (print rest))
