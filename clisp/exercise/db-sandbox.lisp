@@ -133,7 +133,7 @@
     ("usa" "italy" "german" "frence")))
 
 ;;transpose
-(apply #'mapcar #'list *test-raw*)
+;;(apply #'mapcar #'list *test-raw*)
 
 (defparameter *format-input*
   (loop for i in (apply #'mapcar #'list *test-raw*)
@@ -272,7 +272,41 @@
 (rows *customer-table*)
 (cols-spec *customer-table*)
 
+
+(defun table-size (table)
+  (length (rows table)))
+
+(table-size *customer-table*)
+
+(defun nth-row (table n)
+  (aref (rows table) n))
+
+(nth-row *customer-table* 10)
+
+(defun drop-table (table)
+  (setf (rows table) (make-rows)))
+(drop-table *customer-table*)
+*customer-table*
+
+;; delete rows from table where?
+;; (delete-rows table :where '(:first-name ("mike")))
+(defun filter-rows-not (condition)
+  #'(lambda(row)
+      (not (loop for (k v) on condition by #'cddr
+		 always (if (member (getf row k) (makelist v) :test #'string=) t nil)))))
+
+(defun delete-rows (table &key where)
+  (let ((rows (rows table)))
+    (remove-if-not (filter-rows-not where) rows)))
+
+(delete-rows *customer-table* :where '(:first-name ("mike") :last-name ("g")))
+(delete-rows *customer-table* :where '(:first-name "mike"))
+(delete-rows *customer-table* :where '(:city ("bos" "ord" "nyc")))
+
 ;; :first-name "mike" :last-name "j"
+
+;;================================
+;;================================
 
 (elt (rows *customer-table*) 1)
 
