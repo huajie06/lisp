@@ -34,8 +34,7 @@
     :reader name)
    (col-type
     :initarg :col-type
-    :initform nil
-    :reader col-type)
+    :initform nil :reader col-type)
    (normalizer
     :initarg :normalizer
     :reader :normalizer
@@ -247,6 +246,10 @@
     (make-instance 'table :rows rows :cols-spec cols-spec)))
 
 (select :from *customer-table*)
+
+(select :columns '(:first-name :last-name) :from *customer-table*)
+(select :columns :first-name :from *customer-table*)
+
 (select :from *customer-table*
 	:in '(:first-name ("mike" "jack" "lucy")))
 
