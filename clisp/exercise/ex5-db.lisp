@@ -1,226 +1,227 @@
 (in-package :cl-user)
 
-(defpackage :mp3-db
+(defpackage :database
   (:nicknames "db")
   (:use :cl))
 
-(in-package :mp3-db)
-
-
+(in-package :database)
 
 (defclass table ()
-  ((rows
+  ((cols
+    :initarg :cols
+    :accessor cols)
+   (rows
     :initarg :rows
-    :accessor rows
-    :initform (make-rows))
-   (schema  ; the schema here holds the colum specs
-    :initarg :schema
-    :accessor schema)))
+    :initform (make-rows)
+    :accessor rows)))
 
-;; ============= print object
-(defgeneric print-object (obj stream)
-  (:documentation "print the row object"))
-
+(defgeneric print-object (obj stream))
 (defmethod print-object ((obj table) stream)
   (print-unreadable-object (obj stream)
-    (with-accessors ((row-cnt rows) (schema-val schema)) obj
-      (format stream "~&rows:~a.~%schema:~a"
-	      (length row-cnt)
-	      (loop for s in schema-val collect (name s))))))
-;; ============= print object end ===============
+    (with-accessors ((cols cols) (rows rows)) obj
+      (format stream "~&Cols:~%~a~&Rows:~%~a" cols rows))))
 
-(defparameter *default-table-size* 100)
-(defun make-rows (&optional (default-size *default-table-size*))
-  (make-array default-size :fill-pointer 0 :adjustable t))
+(defparameter *default-size* 10)
+(defun make-rows (&optional (default-size *default-size*))
+  (make-array default-size :adjustable t :fill-pointer 0))
 
-
-(defclass column ()
+(defclass col ()
   ((name
-    :reader name
-    :initarg :name)
-   (equality-predicate
-    :reader equality-predicate
-    :initarg :equality-predicate)
-   (comparator
-    :reader comparator
-    :initarg :comparator)
+    :initarg :name
+    :reader name)
+   (col-type
+    :accessor col-type
+    :initarg :col-type)
    (default-value
-    :reader default-value
     :initarg :default-value
+    :accessor default-value
     :initform nil)
-   (value-normalizer
-    :reader value-normalizer
-    :initarg :value-normalizer
-    :initform #'(lambda (v column) (declare (ignore column)) v))))
+   (comparator
+    :initarg :comparator
+    :accessor comparator
+    :initform #'<)))
 
-(defmethod print-object ((obj column) stream)
+(defmethod print-object ((obj col) stream)
   (print-unreadable-object (obj stream)
-    (with-slots (name equality-predicate comparator default-value value-normalizer) obj
-      (format stream "name:~a. ep:~a. comp:~a. dv:~a. vn:~a"
-	      name equality-predicate comparator default-value value-normalizer))))
+    (with-accessors ((name name)
+		     (col-type col-type)
+		     (comparator comparator)
+		     (default-value default-value)) obj
+      (format stream "Name:~a. Type:~a. Comparator:~a. Default:~a"
+	      name col-type comparator default-value))))
 
-(defgeneric make-column (name type &optional default-value))
-(defmethod make-column (name (type (eql 'string)) &optional default-value)
-  (make-instance
-   'column
-   :name name
-   :comparator #'string<
-   :equality-predicate #'string=
-   :default-value default-value
-   :value-normalizer #'not-nullable))
+(defun make-col (name col-type default-value)
+  (make-instance 'col
+		 :name name
+		 :col-type col-type
+		 :default-value default-value))
 
-(defmethod make-column (name (type (eql 'number)) &optional default-value)
-  (make-instance
-   'column
-   :name name
-   :comparator #'<
-   :equality-predicate #'=
-   :default-value default-value))
+(defun fill-comparator (col)
+  (with-accessors ((comparator comparator) (col-type col-type)) col
+    (if (equal col-type 'string) (setf comparator #'string<))))
 
-(defun not-nullable (value column)
-  (or value (error "Column ~a can't be null" (name column))))
+(defmethod initialize-instance :after ((obj col) &key)
+  (fill-comparator obj))
 
-
-(defclass interned-values-column (column)
-  ((interned-values
-    :reader interned-values
-    :initform (make-hash-table :test #'equal))
-   (equality-predicate :initform #'eql)
-   (value-normalizer   :initform #'intern-for-column)))
-
-(defun intern-for-column (value column)
-  (let ((hash (interned-values column)))
-    (or (gethash (not-nullable value column) hash)
-        (setf (gethash value hash) value))))
+;; (comparator (make-col "abc" 'string  0))
+;; (make-col "abc" 'string  0)
+;; (type-of (comparator (make-col "abc" 'string  0)))
+;; (funcall (comparator (make-col "abc" 'string  0)) "abc" "b")
 
 
-(defmethod make-column (name (type (eql 'interned-string)) &optional default-value)
-  (make-instance
-   'interned-values-column
-   :name name
-   :comparator #'string<
-   :default-value default-value))
+(defun init-table (cols)
+  (make-instance 'table :cols cols))
 
-(defun make-schema (spec)
-  (mapcar #'(lambda (column-spec) (apply #'make-column column-spec)) spec))
+(defun insert-row (to-insert-r table)
+  (vector-push-extend
+   (loop for c in (cols table)
+	 for name = (name c)
+	 for value = (or (getf to-insert-r name) (default-value c))
+	 collect name
+	 collect value)
+   (rows table)))
 
-(defparameter *mp3-schema*
-  (make-schema
-   '((:file     string)
-     (:genre    interned-string "Unknown")
-     (:artist   interned-string "Unknown")
-     (:album    interned-string "Unknown")
-     (:song     string)
-     (:track    number 0)
-     (:year     number 0)
-     (:id3-size number))))
+(defun create-cols (col-def-literal)
+  (mapcar #'(lambda (x) (apply #'make-col x))
+	  col-def-literal))
 
-(defparameter *mp3s* (make-instance 'table :schema *mp3-schema*))
-;; ===================== still follow here.
+;;========================================
+;;========================================
+;;========================================
 
+;; (defparameter *for-col-defs*
+;;   '((:name :age :col-type 'number :comparator #'< :default-value 0)
+;;     (:name :name :col-type 'string :comparator #'string< :default-value "")
+;;     (:name :hobby :col-type 'string :comparator #'string< :default-value "")))
 
-(list
- :file   "file value"
- :genre  "genre value"
- :artist "artist"
- :album  "album"
- :song   "songs"
- :track  12
- :year   2020
- :id3-size 2000)
+(defparameter *for-col-defs*
+  '((:age number 0)
+    (:name string "")
+    (:address string "")
+    (:hobby string "")))
 
-(insert-row
- (list
-  :file   "file1"
-  :genre  "pop"
-  :artist "jay4"
-  :album  "new2"
-  :song   "songs"
-  :track  12
-  :year   2020
-  :id3-size 2000) *mp3s*)
-
-
-(type-of *mp3s*)
-(rows *mp3s*)
-(schema *mp3s*)
-(format t "~a" *mp3s*)
-
-*mp3s*
-
-(defun view-db (db)
-  (let ((col-name (loop for s in (schema db) collect (name s)))
-	(row-vals (loop for row across (rows db) collect row)))
-    (progn
-      (format t "|~{~a~15t|~}~%" col-name)
-      (format t "~{|~{~*~a~15t|~}~%~}" row-vals))))
-
-(view-db *mp3s*)
-
-
-
-;; ===================== still follow here.
-(defun insert-row (names-and-values table)
-  (vector-push-extend (normalize-row names-and-values (schema table)) (rows table)))
-
-(defun normalize-row (names-and-values schema)
-  (loop
-    for column in schema
-    for name  = (name column)
-    for value = (or (getf names-and-values name) (default-value column))
-    collect name
-    collect (normalize-for-column value column)))
-
-(defun normalize-for-column (value column)
-  (funcall (value-normalizer column) value column))
-
-;;; here to insert into a db
-
-
-(defun file->row (file)
-  (let ((id3 (read-id3 file)))
-    (list
-     :file   (namestring (truename file))
-     :genre  (translated-genre id3)
-     :artist (artist id3)
-     :album  (album id3)
-     :song   (song id3)
-     :track  (parse-track (track id3))
-     :year   (parse-year (year id3))
-     :id3-size (size id3))))
-(defun parse-track (track)
-  (when track (parse-integer track :end (position #\/ track))))
-
-(defun parse-year (year)
-  (when year (parse-integer year)))
-
-(defun load-database (dir db)
-  (let ((count 0))
-    (walk-directory
-     dir
-     #'(lambda (file)
-         (princ #\.)
-         (incf count)
-         (insert-row (file->row file) db))
-     :test #'mp3-p)
-    (format t "~&Loaded ~d files into database." count)))
-
-
-
-
-==
-;; ============= test code
 (defparameter *test-row*
-  (make-instance 'row
-		 :schema "schema1"
-		 :rows (make-rows 10)))
-*test-row*
-(make-array 2 :initial-element 1)
-(make-array 2 :fill-pointer 1)
-(make-array (list 2 2) :initial-element 1)
+  '((:age 20 :name "mike" :hobby "cs" :address "abc str")
+    (:age 30 :name "jack" :hobby "basketball" :address "bca")
+    (:age 10 :name "lucy" :hobby "paint" :address "yoyo")))
 
-(defparameter *test-col* (make-instance 'column))
 
-;; loop over a vector use across!!
-(loop for i across #('a 'b 'c 'd)
-      do (print i))
+(defparameter *col-def* (create-cols *for-col-defs*))
+(defparameter *test-table* (init-table *col-def*))
+
+;; insert table
+(loop repeat 3
+      do (loop for r in *test-row*
+	       do (insert-row r *test-table*)))
+
+*test-table*
+(cols *test-table*)
+(rows *test-table*)
+
+(defun nth-row (table n)
+  (aref (rows table) n))
+
+(defun shape-table (table)
+  (list (length (rows table)) (length (cols table))))
+
+(shape-table *test-table*)
+
+(defun mklist (ele)
+  (if (listp ele) ele (list ele)))
+
+(defun test-name-in-cols (names)
+  #'(lambda (c)
+      (loop for n in (mklist names)
+	      thereis (equal (name c) n))))
+
+;; (let ((names '(:hobby :age :address :hobby))
+;;       (cols (cols *test-table*)))
+;;   (loop for i in names
+;; 	collect (loop for c in cols
+;; 		      when (funcall (extract-col i) c) return c)))
+
+;; (defun get-col (names table)
+;;   (remove-if-not (extract-col (mklist names)) (cols table)))
+
+(defun get-cols (names cols)
+  (loop for i in (mklist names)
+	collect (loop for c in cols
+		      when (funcall (test-name-in-cols i) c) return c)))
+
+
+(defun extract-row (column)
+  (let ((col (mklist column)))
+    #'(lambda (row)
+	(loop for c in col
+	      collect c collect (getf row c)))))
+
+(cols *test-table*)
+(rows *test-table*)
+(nth-row *test-table* 2)
+
+(defun sort-by-col (col-names table)
+  "the col-names and table must have the same columns"
+  (let* ((cols (get-cols col-names (cols table)))
+	 (comp-mth (mapcar #'comparator cols)))
+    #'(lambda (a b)
+	(loop for i in (mklist col-names)
+	      for comparator in comp-mth
+	      for var-a = (getf a i)
+	      for var-b = (getf b i)
+	      when (funcall comparator var-a var-b) return t
+		when (not (funcall comparator var-a var-b)) return nil
+		  finally (return nil)))))
+
+
+(defparameter cols (list (car (cols *test-table*))))
+*test-table*
+
+(cols *test-table*)
+
+(defun select (&key columns from sort-by distinct)
+  (let ((cols (cols from))
+	(rows (rows from)))
+
+    (when columns
+      (setf cols (get-cols columns cols))
+      (setf rows (map 'vector (extract-row columns) rows)))
+
+    (when distinct
+      (setf rows (remove-duplicates rows :test #'equal)))
+
+    (when sort-by
+      (setf rows
+	    (sort (copy-seq rows) (sort-by-col sort-by from))))
+
+    (make-instance 'table :rows rows :cols cols)))
+
+;;============= testing ==================
+
+(select :columns '(:name :age) :from *test-table*)
+(cols (select :columns '(:name :age) :from *test-table*))
+
+(select :columns '(:age) :from *test-table*)
+(select :columns '(:age) :from *test-table* :distinct t)
+(select :from *test-table*)
+
+(select :from *test-table* :sort-by '(:age :address))
+(select :from *test-table* :sort-by '(:name :address))
+
+(select
+ :columns '(:hobby :address)
+ :from *test-table*
+ :sort-by '(:hobby :address))
+
+(select
+ :columns '(:hobby :address)
+ :from *test-table*
+ :sort-by '(:address))
+
+(select
+ :from *test-table*
+ :sort-by '(:address))
+
+(select
+ :from *test-table*
+ :sort-by '(:address)
+ :distinct t)
