@@ -1,4 +1,15 @@
+
+(1 2 3)
+'(1 2 3)
+(list 1 2 3)
+
+(equal '(1 2 3) (list 1 2 3))
+
 ;; funcall vs. apply
+
+(funcall #'(lambda (x)(+ x 1)) 1)
+(apply #'(lambda (x)(+ x 1)) '(1))
+
 (funcall #'(lambda (x y)(+ x y)) 1 2)
 (apply #'(lambda (x y)(+ x y)) '(1 2))
 
@@ -261,7 +272,7 @@
 (elt *x* 0)
 (elt *x* 1)
 (elt *x* 6) ; will give error
-
+(aref *x* 1)
 (setf (elt *x* 0) 9999)
 *x*
 
@@ -336,6 +347,10 @@
 
 (position #\b "foobarbaz") ; search for a single item
 (search "bar" "foobarbaz") ; search for a sequence
+
+(member "jack" '("jack") :test #'equal)
+(eql "jack" "jack")
+(equal "jack" "jack")
 
 (member "jack" '("jack" "mike") :test #'string=)
 (member 3 '(1 2 3) :test #'=)
