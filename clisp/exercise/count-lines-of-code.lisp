@@ -1,6 +1,6 @@
 (in-package :cl-user)
 
-(defparameter *file-p* #p"/Users/huajiezhang/repo/lisp/clisp")
+(defparameter *file-p* #p"/Users/huajiezhang/repo/lisp")
 
 (defun dir-p (pathname)
   (and
@@ -60,8 +60,36 @@
   (defparameter *counter* 0)
   (travers-list l)
   (format t "-----------------~%Total lines: ~a~%" *counter*))
+
 ;;====================
 
 (wrapper (list-dir *file-p*))
-
 (wrapper (walk-dir *file-p*))
+
+
+====
+(defparameter *result* (make-array 10 :adjustable t :fill-pointer 0))
+(defun expand-list (l)
+  (loop for i in l do
+    (if (listp i) (expand-list i)
+	(vector-push-extend i *result*))))
+
+(expand-list (list-dir *file-p*))
+(expand-list (walk-dir *file-p*))
+*result*
+
+
+(defparameter *result1* '())
+(defun expand-list2 (l)
+  (loop for i in l do
+    (if (listp i) (expand-list2 i)
+	(push i *result1*))))
+
+(expand-list2 (list-dir *file-p*))
+(expand-list2 (walk-dir *file-p*))
+*result1*
+
+(defparameter *x* '())
+(loop for i from 0 to 10
+      do (push i *x*))
+*x*
