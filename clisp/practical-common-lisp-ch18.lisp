@@ -5,6 +5,7 @@
 (format t "~5$" pi)
 (format t "~v$" 5 pi)
 
+(format t "~v@{~a~:*~}" 20 "-")
 
 ;;The difference between the two is that ~% always emits a newline,
 ;;while ~& emits one only if it's not already at the beginning of a
@@ -22,6 +23,22 @@
 (format t "~12d" 123)
 (format t "~12:d" 12300)
 
+
+(block r
+  (format t "~a ~a~%" "what the heck" "yeah")
+  (format t "~a ~40a~%" "what the heck" "yeah")
+  (format t "~a ~40a" "what" "yeah")
+  nil)
+
+(format nil "|~vA|"       10 "Test")
+(format nil "|~v:@<~A~>|" 10 "Test")
+(format nil "|~v@A|"      10 "Test")
+
+
+(format nil "|~10A|" "Test")
+(format nil "|~10:@<~A~>|" "Test")
+(format nil "|~10@A|" "Test")
+==
 (format nil "~(~a~)" "XXDFADFEWF")
 (format nil "~:@(~a~)" "xxdfadfewf")
 
@@ -56,7 +73,7 @@
  (/ 3 0))
 
 
-;; this is like try/catch 
+;; this is like try/catch
 (handler-case (/ 3 0)
   (division-by-zero (c)
     (format t "error: ~a~%" c)))
