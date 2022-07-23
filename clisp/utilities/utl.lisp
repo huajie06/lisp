@@ -30,3 +30,15 @@
 				collect (getf fmt-align align)))))
     (dolist (row str-data)
       (apply #'format t row-fmt (mapcan #'list widths row)))))
+
+
+(defun str->keyword (str)
+  (if (not (stringp str)) (error "Input not string")
+      (intern (string-upcase str) "KEYWORD")))
+
+(defun str->keyword2 (str &key (type-v nil))
+  (if (stringp str)
+      (intern (format nil "~:@(~a~)" str) "KEYWORD")
+      (if type-v
+	  (intern (format nil "~:@(~a~)" str) "KEYWORD")
+	  (error "ERROR: Input not string"))))
