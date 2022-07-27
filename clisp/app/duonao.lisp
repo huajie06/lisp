@@ -59,9 +59,13 @@
 
 
 (defun loop-duonao-list (duonao-result)
-  (loop for i in (subseq (parse-result duonao-result)
-			 0 (length duonao-result))
-	do (sleep (random 30))
+  (loop for i in (subseq
+		  (copy-seq (parse-result duonao-result))
+		  0 (length duonao-result))
+	with l = (length duonao-result)
+	for j from 0
+	do (format t "Current index: ~a. Total: ~a.~%" j l)
+	   (sleep (random 30))
 	collect
 	(concatenate 'list i (get-db-score (getf i :title)))))
 
@@ -77,9 +81,62 @@
 
 *parsed-result*
 
-(with-open-file (stream "/Users/huajiezhang/repo/lisp/clisp/app/movie.txt"
+(defvar *file-to-store-path* "/Users/huajiezhang/repo/lisp/clisp/app/movie.txt")
+
+;; =========== utl funcs
+
+(defun str-to-float(in)
+  (if
+   (equal (type-of in) 'bit)
+   in (string->float in)))
+
+(defun string->float (string)
+  (with-input-from-string (s string)
+    (read s nil nil)))
+
+(defun parse-string-to-float (line)
+  (with-input-from-string (s line)
+    (loop
+      for num = (read s nil nil)
+      while num
+      collect num)))
+
+;; =========== utl funcs end
+
+
+(with-open-file (stream *file-to-store-path*
 			:direction :output
 			:if-does-not-exist :create
-			:if-exists :append)
+			:if-exists :overwrite)
   (when stream
     (print *parsed-result* stream)))
+
+
+(defun sort-by-score ()
+  #'(lambda (a b)(if (> (str-to-float (getf a :score))
+			(str-to-float (getf b :score))) t nil)))
+
+(sort (copy-seq *db*) (sort-by-score))
+
+(defun read-in-movies (file-names)
+  (let ((result nil))
+    (with-open-file (stream file-names)
+      (with-standard-io-syntax
+	(setf result (read stream))))
+    (sort (copy-seq result) (sort-by-score))))
+
+(read-in-movies *file-to-store-path*)
+
+=====
+;; (with-open-file (stream *file-to-store-path*)
+;;   (let ((string-result (make-string (file-length stream))))
+;;     (read-sequence string-result stream)
+;;     string-result))
+
+(defparameter *db* nil)
+(with-open-file (stream *file-to-store-path*)
+(with-standard-io-syntax
+  (setf *db* (read stream)))
+
+(with-open-file (stream *file-to-store-path*)
+  (setf *db* (read stream)))
