@@ -209,8 +209,19 @@ then ping douban.com to get scores "
 
 (defparameter *db* nil)
 (with-open-file (stream *file-to-store-path*)
-(with-standard-io-syntax
-  (setf *db* (read stream)))
+  (with-standard-io-syntax
+    (setf *db* (read stream))))
 
 (with-open-file (stream *file-to-store-path*)
   (setf *db* (read stream)))
+
+
+
+(format-print
+ (loop for i in (sort (copy-seq (subseq *db* 0 10))
+		      (sort-by-score))
+       collect (list (getf i :title)
+		     (getf i :cid)
+		     (getf i :year)
+		     (getf i :score)
+		     )))
