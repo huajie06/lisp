@@ -4,6 +4,27 @@
 
 (setf drakma:*header-stream* *standard-output*)
 
+;; ============= utl funcs =============
+
+(defun str-to-float(in)
+  (if
+   (equal (type-of in) 'bit)
+   in (string->float in)))
+
+(defun string->float (string)
+  (with-input-from-string (s string)
+    (read s nil nil)))
+
+(defun parse-string-to-float (line)
+  (with-input-from-string (s line)
+    (loop
+      for num = (read s nil nil)
+      while num
+      collect num)))
+
+;; =========== utl funcs end ===========
+
+
 (defvar *file-to-store-path* "/Users/huajiezhang/repo/lisp/clisp/app/movie.txt")
 (defparameter *dn-url* "https://m10.iyf.tv/api/list/Search?cinema=1&page=1&size=32&orderby=0&desc=1&cid=0,1,3&isserial=-1&isIndex=-1&isfree=-1&vv=85e9833da2681447cc127711c8561e38&pub=1655779288262")
 
@@ -25,6 +46,8 @@ get the necessary part
 	collect
 	(list :cid (gethash "cid" i)
 	      :title (gethash "title" i)
+	      :lastkey (format nil "https://www.iyf.tv/play?id=~a"
+			       (gethash "lastKey" i))
 	      :year (gethash "year" i))))
 
 (defun sort-by-score ()
@@ -120,7 +143,7 @@ then ping douban.com to get scores "
 
 (defun loop-list-of-movies (list-of-movies)
   (loop for i in list-of-movies
-	for idx from 0
+	for idx from 1
 	with l = (length list-of-movies)
 	do (format t "Current index: ~a. Total: ~a.~%" idx l)
 	   (sleep (random 10))
@@ -155,7 +178,6 @@ then ping douban.com to get scores "
 	 (minute (getf ts :minute)))
     (format nil "~d-~2,'0d-~2,'0d ~2,'0d:~2,'0d" year month date hour minute)))
 
-
 *new-results*
 *current-movie-db*
 
@@ -170,36 +192,14 @@ then ping douban.com to get scores "
 	       (add-ts-to-plist *new-results*)
 	       *current-movie-db*))
 
-
-;; ============= utl funcs =============
-
-(defun str-to-float(in)
-  (if
-   (equal (type-of in) 'bit)
-   in (string->float in)))
-
-(defun string->float (string)
-  (with-input-from-string (s string)
-    (read s nil nil)))
-
-(defun parse-string-to-float (line)
-  (with-input-from-string (s line)
-    (loop
-      for num = (read s nil nil)
-      while num
-      collect num)))
-
-;; =========== utl funcs end ===========
-
-
+*final-to-file*
+;; ============ output to file ============
 (with-open-file (stream *file-to-store-path*
 			:direction :output
 			:if-does-not-exist :create
 			:if-exists :overwrite)
   (when stream
     (print *final-to-file* stream)))
-
-
 
 ;; ==================== test ====================
 ;; (with-open-file (stream *file-to-store-path*)
@@ -215,13 +215,13 @@ then ping douban.com to get scores "
 (with-open-file (stream *file-to-store-path*)
   (setf *db* (read stream)))
 
-
+(load "/Users/huajiezhang/repo/lisp/clisp/utilities/utl.lisp")
 
 (format-print
  (loop for i in (sort (copy-seq (subseq *db* 0 10))
 		      (sort-by-score))
        collect (list (getf i :title)
 		     (getf i :cid)
-		     (getf i :year)
 		     (getf i :score)
-		     )))
+		     (getf i :year)
+		     (getf i :lastkey))))
