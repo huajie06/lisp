@@ -1,8 +1,11 @@
 (ql:quickload :drakma)
 (ql:quickload :yason)
 (ql:quickload :lquery)
+(ql:quickload :cl-ppcre)
 
-https://www.megamillions.com/
+
+
+;; https://www.megamillions.com/
 
 (defparameter *file-name* "html_string.html")
 (defparameter *html-string* nil)
@@ -25,7 +28,6 @@ https://www.megamillions.com/
       (print "file does not exist")))
 
 *html-string*
-
 
 
 (defun single-arr->atom (single-arr)
@@ -106,6 +108,53 @@ https://www.megamillions.com/
 ;; yellow 22
 
 
+(remove-if-not '(lambda (x) (cons x)))
+
+
+(defun select (selector-fn &key in-list)
+  (remove-if-not selector-fn in-list))
+
+(defun eq-ym (&key (year 2022) (month 1) )
+  #'(lambda (ele)
+      (and
+       (= year (parse-integer
+		(nth 2 (cl-ppcre:split "/" (car ele))) :junk-allowed t))
+       (= month (parse-integer
+		 (nth 0 (cl-ppcre:split "/" (car ele))) :junk-allowed t))
+       )))
+
+(defun le-ym (&key (year 2022) (month 1) )
+  #'(lambda (ele)
+      (and
+       (>= year (parse-integer
+		 (nth 2 (cl-ppcre:split "/" (car ele))) :junk-allowed t))
+       (>= month (parse-integer
+		  (nth 0 (cl-ppcre:split "/" (car ele))) :junk-allowed t))
+       )))
+
+(defun ge-ym (&key (year 2022) (month 1) )
+  #'(lambda (ele)
+      (and
+       (<= year (parse-integer
+		 (nth 2 (cl-ppcre:split "/" (car ele))) :junk-allowed t))
+       (<= month (parse-integer
+		  (nth 0 (cl-ppcre:split "/" (car ele))) :junk-allowed t))
+       )))
+
+
+(load "/Users/huajiezhang/repo/lisp/clisp/utilities/utl.lisp")
+
+(select (where :month 11)
+	:in-list (get-balls :ball :yellow))
+
+(select (ge-ym :month 9 :year 2022)
+	:in-list (get-balls :ball :yellow))
+
+(format-print
+ (select (ge-ym :month 8 :year 2022)
+	 :in-list (get-balls :ball :yellow))
+ :align :right)
+
 ==
 
 (defparameter test1
@@ -118,3 +167,139 @@ https://www.megamillions.com/
 
 ;; (loop for (key value) on _tmp_ by #'cddr
 ;;       collect (list key (single-arr->atom value)))
+
+
+==
+(format-print
+ *result-1*)
+
+(equal (nth 1 *result-1*) (nth 1 *result-1*))
+
+(equal (list 1 2) (list 2 1))
+(eql (list 1 2) (list 2 1))
+(eq (list 1 2) (list 2 1))
+
+(eq (list 1 2) (list 1 2))
+(eql (list 1 2) (list 1 2))
+(equal (list 1 2) (list 1 2))
+
+
+
+(defun draw-balls (b1 b2 b3 b4 b5 &key y)
+  (cons (cons 'y y)
+	(loop for i in (sort (list b1 b2 b3 b4 b5) #'<)
+	      for ind from 1
+	      collect (cons ind i))))
+
+(assoc 'y (draw-balls 1 2 3 4 5 :y 29))
+(assoc 1 (draw-balls 1 2 3 4 5 :y 29))
+
+(defun winning-balls (b1 b2 b3 b4 b5 &key y date)
+  (cons (cons 'date date)
+	(cons (cons 'y y)
+	      (loop for i in (sort (list b1 b2 b3 b4 b5) #'<)
+		    for ind from 1
+		    collect (cons ind i)))))
+
+==
+(winning-balls 1 5 17 30 70 :y 22 :date "11/11/2022")
+
+(defun get-white-balls (ball-list)
+  (loop for i from 1 to 5
+	with draw = ball-list
+	collect (cdr (assoc i draw))))
+
+(defun find-match-ball (draw win)
+  (let ((result (sort
+		 (intersection (get-white-balls draw)
+			       (get-white-balls win)) #'<)))
+    (if (equal (assoc 'y draw) (assoc 'y win))
+	(cons (cons 'Yellow (cdr (assoc 'y draw))) result)
+	result)))
+
+(find-match-ball
+ (draw-balls 5 17 38 46 53 :y 2)
+ (winning-balls 1 5 17 30 70 :y 22 :date "11/11/2022")
+ )
+
+
+
+(defun html->ball (row)
+  (let ((white-balls
+	  (sort (list
+		 (parse-integer (getf row :ball1))
+		 (parse-integer (getf row :ball2))
+		 (parse-integer (getf row :ball3))
+		 (parse-integer (getf row :ball4))
+		 (parse-integer (getf row :ball5))) #'<))
+	(yellow-ball (parse-integer (getf row :yellow))))
+    ;;(date (getf row :date)))
+    ;;(draw-balls white-balls yellow-ball)
+    ;;(list white-balls yellow-ball)
+    (apply #'draw-balls
+	   (concatenate 'list white-balls
+			(list ':y yellow-ball)))))
+
+
+(defun html->win-ball (row)
+  (when row
+    (let ((white-balls
+	    (sort (list
+		   (parse-integer (getf row :ball1))
+		   (parse-integer (getf row :ball2))
+		   (parse-integer (getf row :ball3))
+		   (parse-integer (getf row :ball4))
+		   (parse-integer (getf row :ball5))) #'<))
+	  (yellow-ball (parse-integer (getf row :yellow)))
+	  (date (getf row :date)))
+      ;;(draw-balls white-balls yellow-ball)
+      ;;(list white-balls yellow-ball)
+      (apply #'winning-balls
+	     (concatenate 'list white-balls
+			  (list ':y yellow-ball)
+			  (list ':date date))))))
+
+
+
+(nth 1 *result-1*)
+
+(html->ball (nth 1 *result-1*))
+
+(find-match-ball
+ (draw-balls 6 15 38 46 53 :y 22)
+ (html->win-ball (nth 1 *result-1*)))
+
+(find-match-ball
+ (draw-balls 6 15 38 46 59 :y 22)
+ (html->win-ball (nth 1 *result-1*)))
+
+(get-white-balls
+ (html->win-ball (nth 1 *result-1*)))
+
+
+(format-print
+ (let ((draw (draw-balls 6 15 38 46 59 :y 22)))
+   (loop for i in *result-1*
+	 when (find-match-ball draw (html->win-ball i))
+	   collect (list
+		    (cdr (assoc 'date (html->win-ball i)))
+		    (cdr (assoc 'y (html->win-ball i)))
+		    (get-white-balls (html->win-ball i))
+		    (find-match-ball draw (html->win-ball i))
+		    ))))
+
+===
+
+(defun find-all-matches (draw-result)
+  (format-print
+   (let ((draw draw-result))
+     (loop for i in *result-1*
+	   when (find-match-ball draw (html->win-ball i))
+	     collect (list
+		      (cdr (assoc 'date (html->win-ball i)))
+		      (cdr (assoc 'y (html->win-ball i)))
+		      (get-white-balls (html->win-ball i))
+		      (find-match-ball draw (html->win-ball i)))))
+   :align :right))
+
+(find-all-matches (draw-balls 1 5 17 37 70 :y 22))
