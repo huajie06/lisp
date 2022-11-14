@@ -3,11 +3,9 @@
 (ql:quickload :lquery)
 (ql:quickload :cl-ppcre)
 
-
-
 ;; https://www.megamillions.com/
 
-(defparameter *file-name* "html_string.html")
+(defparameter *file-name* "previous_draw_20190101_20221108.html")
 (defparameter *html-string* nil)
 
 ;; (with-open-file
@@ -24,10 +22,11 @@
   (if stream
       (let ((string-result (make-string (file-length stream))))
 	(read-sequence string-result stream)
-	(setf *html-string* string-result))
+	(setf *html-string* string-result)
+	(print "string created"))
       (print "file does not exist")))
 
-*html-string*
+;;*html-string*
 
 
 (defun single-arr->atom (single-arr)
@@ -48,7 +47,9 @@
        (array-of-a-tags (lquery:$ to-parse "a")))
   (setf *result-1*
 	(loop for elem across array-of-a-tags
-	      collect (parse-atag-to-list elem))))
+	      collect (parse-atag-to-list elem)))
+  (if (> (length *result-1*) 1)
+      (print "succeed")))
 
 (defun occurrences (lst)
   (let ((table (make-hash-table :test 'equal)))      ; [1]
@@ -60,15 +61,15 @@
           #'>= :key #'cdr)))                         ; [4]
 
 
-(nth 0 *result-1*)
+;; (loop for ele in *result-1*
+;;       collect (getf ele :yellow))
 
+(loop for i in
+	    (occurrences (loop for ele in *result-1*
+			       collect (getf ele :yellow)))
+      summing (cdr i) into sum-val
+      finally (return sum-val))
 
-
-(loop for ele in *result-1*
-      collect (getf ele :yellow))
-
-(occurrences (loop for ele in *result-1*
-		   collect (getf ele :yellow)))
 
 (defun get-balls (&key ball)
   (loop for ele in *result-1*
@@ -78,8 +79,53 @@
   (occurrences (loop for ele in *result-1*
 		     collect (getf ele ball))))
 
-(get-balls :ball :ball1)
-(freq-balls :ball :ball1)
+(defun pct-ball (ball &optional (end-ind 10))
+  (format-print
+   (subseq
+    (loop for i in
+		(occurrences (loop for ele in *result-1*
+				   collect (getf ele ball)))
+	  collect (list (car i) (format nil  "~,vf" 3 (/ (cdr i) 404))))
+    0 end-ind
+    )))
+
+;; all ball being selected
+(loop for i in
+	    (occurrences
+	     (concatenate 'list
+			  (loop for i in *result-1* collect (getf i :ball1))
+			  (loop for i in *result-1* collect (getf i :ball2))
+			  (loop for i in *result-1* collect (getf i :ball3))
+			  (loop for i in *result-1* collect (getf i :ball2))
+			  (loop for i in *result-1* collect (getf i :ball5))))
+      summing (cdr i) into sum-val
+      finally (return sum-val)) ; 2020
+
+(format-print
+ (subseq
+  (loop for i in
+	      (occurrences
+	       (concatenate 'list
+			    (loop for i in *result-1* collect (getf i :ball1))
+			    (loop for i in *result-1* collect (getf i :ball2))
+			    (loop for i in *result-1* collect (getf i :ball3))
+			    (loop for i in *result-1* collect (getf i :ball2))
+			    (loop for i in *result-1* collect (getf i :ball5))))
+	collect (list (car i) (format nil "~,vf" 3(/ (cdr i) 2020))))
+  0 30))
+
+
+
+
+;; (get-balls :ball :ball1)
+;; (freq-balls :ball :ball1)
+
+(pct-ball :yellow) ; 22
+(pct-ball :ball1)  ; 3
+(pct-ball :ball2)  ; 14
+(pct-ball :ball3)  ; 31
+(pct-ball :ball4)  ; 48
+(pct-ball :ball5)  ; 64
 
 ;; ball1 6
 
@@ -106,9 +152,6 @@
 (get-balls :ball :yellow)
 (freq-balls :ball :yellow)
 ;; yellow 22
-
-
-(remove-if-not '(lambda (x) (cons x)))
 
 
 (defun select (selector-fn &key in-list)
@@ -155,35 +198,6 @@
 	 :in-list (get-balls :ball :yellow))
  :align :right)
 
-==
-
-(defparameter test1
-  (aref (lquery:$ (lquery:$ (initialize *html-string*)) "a") 0))
-
-(defparameter _tmp_ (list :DATE #("11/8/2022") :BALL1 #("5") :BALL2 #("13") :BALL3 #("29") :BALL4
-			  #("38") :BALL5 #("59") :YELLOW #("23")))
-
-;; _tmp_
-
-;; (loop for (key value) on _tmp_ by #'cddr
-;;       collect (list key (single-arr->atom value)))
-
-
-==
-(format-print
- *result-1*)
-
-(equal (nth 1 *result-1*) (nth 1 *result-1*))
-
-(equal (list 1 2) (list 2 1))
-(eql (list 1 2) (list 2 1))
-(eq (list 1 2) (list 2 1))
-
-(eq (list 1 2) (list 1 2))
-(eql (list 1 2) (list 1 2))
-(equal (list 1 2) (list 1 2))
-
-
 
 (defun draw-balls (b1 b2 b3 b4 b5 &key y)
   (cons (cons 'y y)
@@ -201,28 +215,29 @@
 		    for ind from 1
 		    collect (cons ind i)))))
 
-==
-(winning-balls 1 5 17 30 70 :y 22 :date "11/11/2022")
-
 (defun get-white-balls (ball-list)
   (loop for i from 1 to 5
 	with draw = ball-list
 	collect (cdr (assoc i draw))))
 
 (defun find-match-ball (draw win)
+  "find a match between ball drawed and target"
   (let ((result (sort
 		 (intersection (get-white-balls draw)
 			       (get-white-balls win)) #'<)))
     (if (equal (assoc 'y draw) (assoc 'y win))
-	(cons (cons 'Yellow (cdr (assoc 'y draw))) result)
+	;; (cons (cons 'Yellow (cdr (assoc 'y draw))) result)
+	(cons 'y result)
 	result)))
 
 (find-match-ball
  (draw-balls 5 17 38 46 53 :y 2)
- (winning-balls 1 5 17 30 70 :y 22 :date "11/11/2022")
- )
+ (winning-balls 1 5 17 30 70 :y 22 :date "11/11/2022"))
 
-
+(defun filter-match-cnt (match-result &key (cnt 2))
+  "only return when match ball # greater than 2"
+  (unless (< (length match-result) cnt)
+    match-result))
 
 (defun html->ball (row)
   (let ((white-balls
@@ -259,34 +274,29 @@
 			  (list ':y yellow-ball)
 			  (list ':date date))))))
 
+;; (html->ball (nth 1 *result-1*))
+
+;; (find-match-ball
+;;  (draw-balls 6 15 38 46 53 :y 22)
+;;  (html->win-ball (nth 1 *result-1*)))
+
+;; (find-match-ball
+;;  (draw-balls 6 15 38 46 59 :y 22)
+;;  (html->win-ball (nth 1 *result-1*)))
+
+;; (get-white-balls
+;;  (html->win-ball (nth 1 *result-1*)))
 
 
-(nth 1 *result-1*)
-
-(html->ball (nth 1 *result-1*))
-
-(find-match-ball
- (draw-balls 6 15 38 46 53 :y 22)
- (html->win-ball (nth 1 *result-1*)))
-
-(find-match-ball
- (draw-balls 6 15 38 46 59 :y 22)
- (html->win-ball (nth 1 *result-1*)))
-
-(get-white-balls
- (html->win-ball (nth 1 *result-1*)))
-
-
-(format-print
- (let ((draw (draw-balls 6 15 38 46 59 :y 22)))
-   (loop for i in *result-1*
-	 when (find-match-ball draw (html->win-ball i))
-	   collect (list
-		    (cdr (assoc 'date (html->win-ball i)))
-		    (cdr (assoc 'y (html->win-ball i)))
-		    (get-white-balls (html->win-ball i))
-		    (find-match-ball draw (html->win-ball i))
-		    ))))
+;; (format-print
+;;  (let ((draw (draw-balls 6 15 38 46 59 :y 22)))
+;;    (loop for i in *result-1*
+;; 	 when (find-match-ball draw (html->win-ball i))
+;; 	   collect (list
+;; 		    (cdr (assoc 'date (html->win-ball i)))
+;; 		    (cdr (assoc 'y (html->win-ball i)))
+;; 		    (get-white-balls (html->win-ball i))
+;; 		    (find-match-ball draw (html->win-ball i))))))
 
 ===
 
@@ -294,7 +304,7 @@
   (format-print
    (let ((draw draw-result))
      (loop for i in *result-1*
-	   when (find-match-ball draw (html->win-ball i))
+	   when (filter-match-cnt (find-match-ball draw (html->win-ball i)))
 	     collect (list
 		      (cdr (assoc 'date (html->win-ball i)))
 		      (cdr (assoc 'y (html->win-ball i)))
@@ -302,4 +312,133 @@
 		      (find-match-ball draw (html->win-ball i)))))
    :align :right))
 
-(find-all-matches (draw-balls 1 5 17 37 70 :y 22))
+;; (find-all-matches (draw-balls 1 5 17 37 70 :y 22))
+(find-all-matches (draw-balls 3 14 31 48 64 :y 22))
+
+(find-all-matches (draw-balls 3 14 31 48 69 :y 24))
+
+(find-all-matches (draw-balls 3 14 31 48 64 :y 25))
+
+(find-all-matches (draw-balls 14 15 17 20 24 :y 25))
+
+
+(defun combination (n lst)
+  (cond
+    ((zerop n) nil)
+    ((= n 1) (mapcar #'list lst))
+    (t (mapcan #'(lambda (x)
+		   (mapcar #'(lambda (y) (append (list x) y))
+			   (combination (1- n) (setf lst (delete x lst)))))
+	       lst))))
+
+;;(combination 3 '(1 2 3 4))
+
+
+
+;; get all white-balls
+(loop for i in *result-1*
+      for cnt from 0
+      when (< cnt 10)
+	collect (list
+		 (cdr (assoc 1 (html->win-ball i)))
+		 (cdr (assoc 2 (html->win-ball i)))
+		 (cdr (assoc 3 (html->win-ball i)))
+		 (cdr (assoc 4 (html->win-ball i)))
+		 (cdr (assoc 5 (html->win-ball i)))))
+
+(let* ((draw '(1 5 31 37 49))
+       (target '(1 5 17 37 70))
+       (match-result (loop for i in (combination 3 draw)
+			   collect (intersection i target))))
+  (mapcar #'(lambda(x)(sort x #'<))
+	  (remove-if-not #'(lambda (x) (> (length x) 2)) match-result)))
+
+
+(defun print-lb (list-of-things)
+  (loop for i in list-of-things
+	do (format t "~a~%" i)))
+
+;; most freq 3 number combo
+(print-lb
+ (let* ((all-white-ball-comb
+	  (loop for i in *result-1*
+		for cnt from 0
+		when (< cnt 30)
+		  collect (list
+			   (cdr (assoc 1 (html->win-ball i)))
+			   (cdr (assoc 2 (html->win-ball i)))
+			   (cdr (assoc 3 (html->win-ball i)))
+			   (cdr (assoc 4 (html->win-ball i)))
+			   (cdr (assoc 5 (html->win-ball i))))))
+	(all-3-white-balls (apply #'append(loop for i in all-white-ball-comb
+						collect (combination 2 i)))))
+   (subseq
+    (occurrences
+     all-3-white-balls) 0 20)))
+
+
+(let* ((all-white-ball-comb
+	 (loop for i in *result-1*
+	       for cnt from 0
+	       when (< cnt 30)
+		 collect (list
+			  (cdr (assoc 1 (html->win-ball i)))
+			  (cdr (assoc 2 (html->win-ball i)))
+			  (cdr (assoc 3 (html->win-ball i)))
+			  (cdr (assoc 4 (html->win-ball i)))
+			  (cdr (assoc 5 (html->win-ball i))))))
+       (all-3-white-balls (apply #'append(loop for i in all-white-ball-comb
+					       collect (combination 2 i)))))
+  (remove-duplicates
+   (apply #'append
+	  (loop for i in (subseq (occurrences all-3-white-balls) 0 20)
+		collect (car i)))))
+
+
+(find-all-matches (draw-balls 0 1 25 38 59 :y 25))
+(find-all-matches (draw-balls 0 1 30 25 66 :y 25))
+
+
+(find-all-matches (draw-balls 0 1 2 17 27 :y 25))
+(find-all-matches (draw-balls 0 1 2 4 64 :y 25))
+
+(find-all-matches (draw-balls 15 25 30 38 66 :y 25))
+(find-all-matches (draw-balls 10 25 30 38 66 :y 25))
+(find-all-matches (draw-balls 10 25 30 38 64 :y 25))
+(find-all-matches (draw-balls 14 25 30 38 64 :y 25))
+
+(find-all-matches (draw-balls 10 14 25 38 64 :y 25))
+(find-all-matches (draw-balls 5 14 25 38 64 :y 25))
+
+(find-all-matches (draw-balls 14 25 35 38 66 :y 25))
+
+
+(find-all-matches (draw-balls 14 25 35 38 66 :y 25))
+
+
+
+(loop for i in
+	    (loop for i in (combination 5
+					(list 10 14 50 64 15 45 66 35 21 30 2 55 59 13 38 29 5 17 37 25 63))
+		  collect (loop for i in (sort i #'<)
+				for idx from 1
+				collect (cons idx i)))
+      do (find-all-white-matches i))
+
+
+(nth 20 *result-1*)
+
+(draw-balls 14 25 35 38 66 :y 25)
+
+(find-all-white-matches '((1 . 14) (2 . 25) (3 . 35) (4 . 38) (5 . 66)))
+
+(defun find-all-white-matches (draw-result)
+  (format-print
+   (let ((draw draw-result))
+     (loop for i in *result-1*
+	   when (filter-match-cnt (find-match-ball draw (html->win-ball i)) :cnt 3)
+	     collect (list
+		      (cdr (assoc 'date (html->win-ball i)))
+		      (get-white-balls (html->win-ball i))
+		      (find-match-ball draw (html->win-ball i)))))
+   :align :right))
