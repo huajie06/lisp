@@ -1,5 +1,5 @@
 
-(defun format-print (list-of-list)
+(defun format-print (list-of-list &key (align :center))
   (let* ((data list-of-list)
 	 (fmt-align '(:left   "~vA"
 		      :center "~v:@<~A~>"
@@ -26,11 +26,14 @@
 	 (widths (loop for i across width collect i))
 	 (row-fmt (format nil "| ~{~A~^ | ~} |~~%"
 			  (loop for i from 1 to cols-count
-				with align = :center
+				;;with align = :right
+				with align = align
 				collect (getf fmt-align align)))))
     (dolist (row str-data)
       (apply #'format t row-fmt (mapcan #'list widths row)))))
 
+;; (format-print
+;;  (list '(1 2 3) '(2 3 4)) :align :right)
 
 (defun str->keyword (str)
   (if (not (stringp str)) (error "Input not string")
