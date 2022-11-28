@@ -3,6 +3,7 @@
 (ql:quickload :lquery)
 (ql:quickload :cl-ppcre)
 
+(load "/Users/huajiezhang/repo/lisp/clisp/utilities/utl.lisp")
 ;; https://www.megamillions.com/
 
 (defparameter *file-name* "previous_draw_20190101_20221108.html")
@@ -184,11 +185,6 @@
 		  (nth 0 (cl-ppcre:split "/" (car ele))) :junk-allowed t))
        )))
 
-
-(load "/Users/huajiezhang/repo/lisp/clisp/utilities/utl.lisp")
-
-(select (where :month 11)
-	:in-list (get-balls :ball :yellow))
 
 (select (ge-ym :month 9 :year 2022)
 	:in-list (get-balls :ball :yellow))
@@ -409,14 +405,44 @@
 
 (find-all-matches (draw-balls 10 14 25 38 64 :y 25))
 (find-all-matches (draw-balls 5 14 25 38 64 :y 25))
+(find-all-matches (draw-balls 5 14 21 38 64 :y 25))
 
 (find-all-matches (draw-balls 14 25 35 38 66 :y 25))
+(find-all-matches (draw-balls 10 25 35 38 66 :y 25))
+(find-all-matches (draw-balls 10 25 30 38 66 :y 25))
+(find-all-matches (draw-balls 10 25 30 50 66 :y 25))
 
 
-(find-all-matches (draw-balls 14 25 35 38 66 :y 25))
+(find-all-matches (draw-balls 6 19 28 46 61 :y 18))
+
+(find-all-matches (draw-balls 2 14 16 38 66 :y 9))
+
+(find-all-matches (draw-balls 13 23 24 25 43 :y 2))
+
+(find-all-matches (draw-balls 29 31 46 54 67 :y 18))
 
 
+(show-top-n 20)
 
+(pct-ball :yellow)
+
+
+(defun show-top-n (to-n)
+  (format-print
+   (loop for i in *result-1*
+	 for idx from 0
+	 when (< idx to-n)
+	   collect (list (getf i :date)
+			 (list
+			  (getf i :ball1)
+			  (getf i :ball2)
+			  (getf i :ball3)
+			  (getf i :ball4)
+			  (getf i :ball5))
+			 (getf i :yellow)))))
+
+
+==
 (loop for i in
 	    (loop for i in (combination 5
 					(list 10 14 50 64 15 45 66 35 21 30 2 55 59 13 38 29 5 17 37 25 63))
